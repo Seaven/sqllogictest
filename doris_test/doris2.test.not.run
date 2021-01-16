@@ -1,0 +1,9857 @@
+statement ok
+Drop table IF EXISTS t1
+
+hash-threshold 8
+
+statement ok
+CREATE TABLE t1(a INTEGER, b INTEGER, c INTEGER, d INTEGER, e INTEGER) DUPLICATE KEY(`a`) DISTRIBUTED BY HASH(a) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a`) DISTRIBUTED BY HASH(a) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a`) DISTRIBUTED BY HASH(a) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t1(e,c,b,d,a) VALUES(NULL,102,NULL,101,104)
+
+statement ok
+INSERT INTO t1(a,c,d,e,b) VALUES(107,106,108,109,105)
+
+statement ok
+INSERT INTO t1(e,d,b,a,c) VALUES(110,114,112,NULL,113)
+
+statement ok
+INSERT INTO t1(d,c,e,a,b) VALUES(116,119,117,115,NULL)
+
+statement ok
+INSERT INTO t1(c,d,b,e,a) VALUES(123,122,124,NULL,121)
+
+statement ok
+INSERT INTO t1(a,d,b,e,c) VALUES(127,128,129,126,125)
+
+statement ok
+INSERT INTO t1(e,c,a,d,b) VALUES(132,134,131,133,130)
+
+statement ok
+INSERT INTO t1(a,d,b,e,c) VALUES(138,136,139,135,137)
+
+statement ok
+INSERT INTO t1(e,c,d,a,b) VALUES(144,141,140,142,143)
+
+statement ok
+INSERT INTO t1(b,a,e,d,c) VALUES(145,149,146,NULL,147)
+
+statement ok
+INSERT INTO t1(b,c,a,d,e) VALUES(151,150,153,NULL,NULL)
+
+statement ok
+INSERT INTO t1(c,e,a,d,b) VALUES(155,157,159,NULL,158)
+
+statement ok
+INSERT INTO t1(c,b,a,d,e) VALUES(161,160,163,164,162)
+
+statement ok
+INSERT INTO t1(b,d,a,e,c) VALUES(167,NULL,168,165,166)
+
+statement ok
+INSERT INTO t1(d,b,c,e,a) VALUES(171,170,172,173,174)
+
+statement ok
+INSERT INTO t1(e,c,a,d,b) VALUES(177,176,179,NULL,175)
+
+statement ok
+INSERT INTO t1(b,e,a,d,c) VALUES(181,180,182,183,184)
+
+statement ok
+INSERT INTO t1(c,a,b,e,d) VALUES(187,188,186,189,185)
+
+statement ok
+INSERT INTO t1(d,b,c,e,a) VALUES(190,194,193,192,191)
+
+statement ok
+INSERT INTO t1(a,e,b,d,c) VALUES(199,197,198,196,195)
+
+statement ok
+INSERT INTO t1(b,c,d,a,e) VALUES(NULL,202,203,201,204)
+
+statement ok
+INSERT INTO t1(c,e,a,b,d) VALUES(208,NULL,NULL,206,207)
+
+statement ok
+INSERT INTO t1(c,e,a,d,b) VALUES(214,210,213,212,211)
+
+statement ok
+INSERT INTO t1(b,c,a,d,e) VALUES(218,215,216,217,219)
+
+statement ok
+INSERT INTO t1(b,e,d,a,c) VALUES(223,221,222,220,224)
+
+statement ok
+INSERT INTO t1(d,e,b,a,c) VALUES(226,227,228,229,225)
+
+statement ok
+INSERT INTO t1(a,c,b,e,d) VALUES(234,231,232,230,233)
+
+statement ok
+INSERT INTO t1(e,b,a,c,d) VALUES(237,236,239,NULL,238)
+
+statement ok
+INSERT INTO t1(e,c,b,a,d) VALUES(NULL,244,240,243,NULL)
+
+statement ok
+INSERT INTO t1(e,d,c,b,a) VALUES(246,248,247,249,245)
+
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND a>b
+----
+17 values hashing to 1559559035cf6878db5778036f19ffdc
+
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       c,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT abs(a),
+       c-d,
+       d
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a,
+       e,
+       a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2
+  FROM t1
+ WHERE b>c
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIIIII rowsort
+SELECT c,
+       (a+b+c+d+e)/5,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       d-e
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       a+b*2+c*3+d*4+e*5,
+       c
+  FROM t1
+ WHERE a IS NULL
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+----
+
+query IIII rowsort
+SELECT c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       abs(a)
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT d-e,
+       e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       abs(b-c),
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE b>c
+    OR (e>c OR e<d)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIIIII rowsort
+SELECT a,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       d
+  FROM t1
+ WHERE a>b
+----
+query IIIIII rowsort
+SELECT c,
+       b,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b>c
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR d>e
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4,
+       a+b*2,
+       a
+  FROM t1
+ WHERE a>b
+----
+query IIII rowsort
+SELECT a+b*2,
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       e,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c>d
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       e,
+       d-e,
+       a+b*2+c*3,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT c,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3,
+       b-c,
+       a+b*2,
+       a+b*2+c*3+d*4,
+       b,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a IS NULL
+----
+
+query I rowsort
+SELECT d-e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query II rowsort
+SELECT e,
+       b-c
+  FROM t1
+----
+query I rowsort
+SELECT a
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+----
+
+query III rowsort
+SELECT e,
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+24 values hashing to b56c76150701a237d03ed05a62f30c10
+
+query IIIIII rowsort
+SELECT c,
+       (a+b+c+d+e)/5,
+       b-c,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       d-e
+  FROM t1
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+----
+query IIIII rowsort
+SELECT a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       (a+b+c+d+e)/5,
+       a+b*2
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a-b
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (e>c OR e<d)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+----
+
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c)
+  FROM t1
+ WHERE a>b
+   AND c BETWEEN b-2 AND d+2
+----
+24 values hashing to 2f5f6f0dddb8108b4e595b75bb59db26
+
+query III rowsort
+SELECT e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c
+  FROM t1
+ WHERE a>b
+   AND b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       b-c,
+       a+b*2+c*3+d*4+e*5,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e
+  FROM t1
+ WHERE d>e
+   AND a IS NULL
+   AND (e>c OR e<d)
+----
+query II rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b>c
+   AND (a>b-2 AND a<b+2)
+----
+query II rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+   AND b IS NOT NULL
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       abs(b-c),
+       d
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query III rowsort
+SELECT a,
+       a+b*2+c*3,
+       c-d
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b,
+       c,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR (a>b-2 AND a<b+2)
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       a-b,
+       d-e,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND a>b
+----
+1
+2
+4294967295
+1612
+635
+105
+
+query II rowsort
+SELECT c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR d>e
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND a IS NULL
+----
+
+query I rowsort
+SELECT abs(b-c)
+  FROM t1
+----
+query IIIII rowsort
+SELECT abs(b-c),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       b,
+       d-e
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND coalesce(a,b,c,d,e)<>0
+----
+15 values hashing to 9a026bd758ee7c600a773384544eca8e
+
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a,
+       a+b*2+c*3
+  FROM t1
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query III rowsort
+SELECT c-d,
+       (a+b+c+d+e)/5,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a IS NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       abs(a),
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+32 values hashing to 963ddd0b1f373c9aa5123b0f401e8778
+
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d
+  FROM t1
+----
+query I rowsort
+SELECT abs(b-c)
+  FROM t1
+----
+query IIIII rowsort
+SELECT b-c,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a IS NULL
+    OR b>c
+----
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+4294967293
+4294967294
+
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       a+b*2,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a>b
+   AND b IS NOT NULL
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+333
+108
+317
+1067
+1
+1612
+
+query II rowsort
+SELECT a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE a IS NULL
+    OR d>e
+----
+query IIII rowsort
+SELECT d,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+30 values hashing to 62634e04a17da0e006feac1d867155ac
+
+query IIIIII rowsort
+SELECT a,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND b>c
+   AND (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT b,
+       abs(a),
+       c-d,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c>d
+   AND c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT a,
+       (a+b+c+d+e)/5,
+       c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR (a>b-2 AND a<b+2)
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       a+b*2+c*3+d*4,
+       b-c,
+       b,
+       a-b
+  FROM t1
+ WHERE b>c
+    OR (a>b-2 AND a<b+2)
+----
+query II rowsort
+SELECT a+b*2,
+       c
+  FROM t1
+ WHERE a IS NULL
+----
+query II rowsort
+SELECT e,
+       d
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       d-e,
+       (a+b+c+d+e)/5,
+       a+b*2,
+       b-c,
+       a-b
+  FROM t1
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR c BETWEEN b-2 AND d+2
+    OR c>d
+----
+query IIIIII rowsort
+SELECT c,
+       d-e,
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+   AND a IS NULL
+   AND a>b
+----
+
+query IIIII rowsort
+SELECT a+b*2+c*3,
+       a,
+       b-c,
+       d,
+       abs(a)
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       e,
+       a+b*2,
+       abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR c BETWEEN b-2 AND d+2
+----
+30 values hashing to 62634e04a17da0e006feac1d867155ac
+
+query IIIIIII rowsort
+SELECT d-e,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       b-c,
+       c,
+       d,
+       e
+  FROM t1
+ WHERE b>c
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR (e>a AND e<b)
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e
+  FROM t1
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR b>c
+    OR coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIII rowsort
+SELECT a-b,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d
+  FROM t1
+----
+query III rowsort
+SELECT e,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(b-c),
+       c-d,
+       a,
+       a+b*2,
+       c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR (e>c OR e<d)
+    OR b>c
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       a-b,
+       e,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       d-e,
+       abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (a>b-2 AND a<b+2)
+   AND coalesce(a,b,c,d,e)<>0
+----
+1096
+1180
+1360
+
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b
+  FROM t1
+ WHERE b>c
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR d>e
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       c,
+       a+b*2+c*3
+  FROM t1
+ WHERE a>b
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       a-b,
+       b-c
+  FROM t1
+----
+query III rowsort
+SELECT d,
+       abs(a),
+       d-e
+  FROM t1
+ WHERE b IS NOT NULL
+    OR d>e
+    OR (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       a-b,
+       (a+b+c+d+e)/5,
+       e,
+       a
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND c>d
+----
+1300
+1390
+1430
+364
+
+query II rowsort
+SELECT e,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+109
+107
+126
+127
+
+query IIIIIII rowsort
+SELECT abs(b-c),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       a+b*2+c*3+d*4,
+       b-c,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+21 values hashing to 2091599db29dba784580df1344f2e1c7
+
+query III rowsort
+SELECT a+b*2,
+       d-e,
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT a-b,
+       d-e,
+       b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND a>b
+----
+query IIIIII rowsort
+SELECT a-b,
+       abs(a),
+       b,
+       c-d,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b>c
+    OR (e>c OR e<d)
+    OR a>b
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND a>b
+   AND (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT abs(a),
+       b-c,
+       c-d,
+       a-b,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a>b
+   AND b>c
+----
+query IIIII rowsort
+SELECT b-c,
+       abs(a),
+       c-d,
+       d,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d>e
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIII rowsort
+SELECT a-b,
+       d-e,
+       c-d,
+       d
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       d-e,
+       d,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND c BETWEEN b-2 AND d+2
+   AND a IS NULL
+----
+query IIIII rowsort
+SELECT a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3,
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND a IS NULL
+----
+
+query II rowsort
+SELECT a,
+       e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       d,
+       a+b*2+c*3+d*4+e*5,
+       d-e
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+   AND a IS NULL
+----
+
+query IIIIIII rowsort
+SELECT a+b*2,
+       a,
+       abs(b-c),
+       a-b,
+       abs(a),
+       b-c,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a>b
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(b-c),
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT b-c,
+       abs(b-c),
+       e,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND c BETWEEN b-2 AND d+2
+   AND (e>a AND e<b)
+----
+14 values hashing to 5e385d98145b2f1346a24835cf714fd3
+
+query III rowsort
+SELECT a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b
+  FROM t1
+ WHERE c>d
+    OR a IS NULL
+----
+query IIII rowsort
+SELECT d-e,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d
+  FROM t1
+ WHERE c>d
+----
+query IIIIII rowsort
+SELECT b,
+       a+b*2+c*3,
+       e,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+30 values hashing to 0075716954dbc259c5e8ac65568a6fa7
+
+query IIII rowsort
+SELECT d,
+       b-c,
+       abs(b-c),
+       b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+   AND a>b
+----
+108
+4294967295
+1
+105
+
+query IIIIII rowsort
+SELECT d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       a-b,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT abs(a),
+       c-d,
+       b-c,
+       b
+  FROM t1
+ WHERE a IS NULL
+    OR a>b
+----
+query IIIIII rowsort
+SELECT a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       e,
+       abs(a),
+       d-e
+  FROM t1
+----
+query IIIII rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4,
+       abs(a),
+       a,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR coalesce(a,b,c,d,e)<>0
+    OR (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       e,
+       a+b*2,
+       a-b,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR a>b
+    OR (a>b-2 AND a<b+2)
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       b-c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT b,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT e,
+       a+b*2+c*3+d*4,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT b-c,
+       c,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       abs(b-c),
+       b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       d-e,
+       c,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+18 values hashing to d68e7f04902723acabf5311cfb9bd454
+
+query II rowsort
+SELECT abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+    OR (e>a AND e<b)
+    OR b IS NOT NULL
+----
+query IIIII rowsort
+SELECT c-d,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT d,
+       e,
+       a+b*2+c*3,
+       a+b*2
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT e,
+       abs(b-c),
+       a+b*2+c*3,
+       a,
+       a-b,
+       b,
+       abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND b>c
+   AND a IS NULL
+----
+
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE a IS NULL
+----
+query I rowsort
+SELECT a
+  FROM t1
+ WHERE d>e
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       b,
+       e,
+       a+b*2+c*3+d*4,
+       b-c,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+1918
+4294967293
+2226
+4294967293
+2476
+4294967292
+
+query III rowsort
+SELECT a,
+       a+b*2,
+       e
+  FROM t1
+----
+query III rowsort
+SELECT c,
+       b-c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+----
+query IIII rowsort
+SELECT c-d,
+       abs(b-c),
+       e,
+       d
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIII rowsort
+SELECT c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       b,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT c,
+       b-c,
+       a+b*2+c*3,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT b,
+       b-c,
+       a+b*2,
+       abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a>b
+   AND b IS NOT NULL
+----
+24 values hashing to d719c1f7ae09acb7c6daf2bc7ca54d30
+
+query IIIIII rowsort
+SELECT a+b*2,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       a-b
+  FROM t1
+ WHERE a IS NULL
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT b-c,
+       a-b,
+       abs(b-c),
+       a+b*2+c*3,
+       d-e,
+       b,
+       d
+  FROM t1
+ WHERE d>e
+----
+query III rowsort
+SELECT d,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       abs(b-c),
+       d
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR c>d
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       c-d,
+       d-e,
+       abs(b-c),
+       a+b*2+c*3
+  FROM t1
+ WHERE d>e
+   AND (e>a AND e<b)
+   AND b IS NOT NULL
+----
+12 values hashing to 5171cd16cbf851112601326a34617a9b
+
+query II rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c>d
+   AND a>b
+----
+10 values hashing to 70dafa51f063a51d1dcc07fa7319d950
+
+query II rowsort
+SELECT abs(a),
+       c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND b>c
+----
+12 values hashing to a25761d1c96bb18c6d03bcb12af813b6
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       c,
+       abs(a),
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c>d
+   AND b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT e,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       a+b*2+c*3+d*4,
+       d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR (e>a AND e<b)
+----
+30 values hashing to 7f83aa9a6cc284eed137912784a7734b
+
+query IIIIIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4,
+       d,
+       a,
+       a-b,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query II rowsort
+SELECT e,
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       d-e,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a+b*2
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       b-c,
+       e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query I rowsort
+SELECT d-e
+  FROM t1
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR a IS NULL
+----
+query II rowsort
+SELECT e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (a>b-2 AND a<b+2)
+----
+
+query I rowsort
+SELECT a
+  FROM t1
+----
+query III rowsort
+SELECT b,
+       d,
+       a-b
+  FROM t1
+----
+query II rowsort
+SELECT e,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR (a>b-2 AND a<b+2)
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       abs(b-c),
+       a-b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT c,
+       a,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND c BETWEEN b-2 AND d+2
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+    OR (e>c OR e<d)
+    OR b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       c,
+       a+b*2+c*3,
+       b-c,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT d-e,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT abs(b-c),
+       abs(a),
+       a+b*2+c*3
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND d NOT BETWEEN 110 AND 150
+   AND c BETWEEN b-2 AND d+2
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT d
+  FROM t1
+----
+query II rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT b,
+       a+b*2+c*3+d*4,
+       a,
+       (a+b+c+d+e)/5,
+       abs(b-c),
+       d-e,
+       c-d
+  FROM t1
+----
+query II rowsort
+SELECT e,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIII rowsort
+SELECT d,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c),
+       abs(a),
+       a+b*2
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+108
+4294967295
+333
+1
+107
+317
+
+query I rowsort
+SELECT d-e
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND b IS NOT NULL
+   AND c>d
+----
+1
+1
+1
+2
+3
+4294967292
+4294967292
+4294967294
+
+query IIII rowsort
+SELECT c,
+       a,
+       a+b*2+c*3,
+       c-d
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT e,
+       d,
+       abs(b-c),
+       a+b*2+c*3,
+       b-c,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND a IS NULL
+   AND (e>c OR e<d)
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5,
+       c-d,
+       abs(a),
+       a
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+----
+query IIIIII rowsort
+SELECT abs(a),
+       d-e,
+       a-b,
+       a+b*2+c*3,
+       e,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b>c
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+127
+2
+4294967294
+760
+126
+1902
+
+query IIIIII rowsort
+SELECT b,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       a+b*2+c*3,
+       a
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to 1231b7bcb0aa8a6aa56a394575659320
+
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b,
+       d-e
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND d>e
+   AND (a>b-2 AND a<b+2)
+----
+9 values hashing to fd0e8dca27d262afbfee6fffbc48dfd2
+
+query II rowsort
+SELECT b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a-b,
+       c-d,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       a,
+       a-b
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIII rowsort
+SELECT b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR b IS NOT NULL
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIII rowsort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR a IS NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query II rowsort
+SELECT b-c,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIIIII rowsort
+SELECT c-d,
+       (a+b+c+d+e)/5,
+       a+b*2,
+       b,
+       d-e,
+       a
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       e,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT c,
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       a+b*2+c*3
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(a),
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE a IS NULL
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d
+  FROM t1
+ WHERE b>c
+    OR (e>a AND e<b)
+    OR d>e
+----
+query II rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+    OR d>e
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       d,
+       d-e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND d>e
+----
+9 values hashing to 05963080c9b380d4e7968866787d2c7f
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(a),
+       d-e,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       b
+  FROM t1
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       c-d,
+       b-c,
+       d-e
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       b-c,
+       e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+   AND b IS NOT NULL
+----
+14 values hashing to 7a0e502a65d80489a942896fc526ed2d
+
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+30 values hashing to 62634e04a17da0e006feac1d867155ac
+
+query IIIII rowsort
+SELECT b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       abs(a),
+       e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR (a>b-2 AND a<b+2)
+    OR c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (e>a AND e<b)
+----
+1918
+193
+2226
+224
+2476
+247
+
+query II rowsort
+SELECT a,
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (e>a AND e<b)
+----
+220
+1338
+245
+1484
+
+query IIIIII rowsort
+SELECT abs(a),
+       c,
+       a,
+       a-b,
+       abs(b-c),
+       a+b*2+c*3
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT d-e,
+       d,
+       a-b,
+       c-d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+----
+12 values hashing to d89f13f7034404f4259b8240c70468e4
+
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5,
+       a-b,
+       a+b*2+c*3,
+       c-d
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (a>b-2 AND a<b+2)
+   AND b>c
+----
+query IIII rowsort
+SELECT a-b,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b-c,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3
+  FROM t1
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR c>d
+----
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       c,
+       a,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT b,
+       a,
+       abs(a),
+       d,
+       e
+  FROM t1
+ WHERE c>d
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a-b,
+       a+b*2,
+       d,
+       e,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR a IS NULL
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       d-e
+  FROM t1
+ WHERE d>e
+    OR a IS NULL
+    OR c>d
+----
+query III rowsort
+SELECT b,
+       d,
+       d-e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR c>d
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+10 values hashing to a0d54dbd5cbc35f9a5a08108b4238811
+
+query IIIIIII rowsort
+SELECT b,
+       e,
+       a+b*2,
+       a,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       d-e
+  FROM t1
+ WHERE b>c
+    OR b IS NOT NULL
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+   AND b>c
+   AND a IS NULL
+----
+
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+1
+317
+333
+4294967295
+4
+385
+333
+2
+
+query II rowsort
+SELECT c,
+       abs(b-c)
+  FROM t1
+ WHERE c>d
+   AND b>c
+   AND (e>c OR e<d)
+----
+137
+2
+141
+2
+
+query IIIII rowsort
+SELECT b,
+       a+b*2,
+       e,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE b IS NOT NULL
+    OR (a>b-2 AND a<b+2)
+    OR a IS NULL
+----
+query IIII rowsort
+SELECT abs(b-c),
+       a-b,
+       a+b*2,
+       d-e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (e>a AND e<b)
+----
+12 values hashing to e7a69236f05d252901d36a10d9c667dd
+
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT abs(b-c),
+       e,
+       a-b
+  FROM t1
+ WHERE b>c
+    OR a IS NULL
+----
+query IIIII rowsort
+SELECT b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       a+b*2,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR b IS NOT NULL
+    OR b>c
+----
+query IIIIII rowsort
+SELECT d,
+       a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       b-c,
+       c
+  FROM t1
+----
+query IIII rowsort
+SELECT abs(a),
+       d,
+       a+b*2+c*3+d*4,
+       a
+  FROM t1
+ WHERE d>e
+----
+query IIIII rowsort
+SELECT c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a,
+       b-c,
+       a-b
+  FROM t1
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+    OR b>c
+----
+query III rowsort
+SELECT a+b*2,
+       a+b*2+c*3+d*4,
+       abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+----
+query IIIIII rowsort
+SELECT b,
+       d-e,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR coalesce(a,b,c,d,e)<>0
+    OR (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+1
+2
+2
+3
+3
+3
+3
+4
+
+query III rowsort
+SELECT b-c,
+       d,
+       abs(a)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2,
+       c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       b,
+       e
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4+e*5,
+       abs(a),
+       d
+  FROM t1
+----
+query IIII rowsort
+SELECT a,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c)
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR d>e
+    OR b>c
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       a+b*2,
+       c-d,
+       a-b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d NOT BETWEEN 110 AND 150
+    OR b IS NOT NULL
+----
+query IIII rowsort
+SELECT e,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b
+  FROM t1
+ WHERE b>c
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR (a>b-2 AND a<b+2)
+    OR (e>c OR e<d)
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       a
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       a+b*2+c*3+d*4,
+       abs(a),
+       abs(b-c),
+       b
+  FROM t1
+ WHERE a>b
+   AND (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+----
+
+query IIIIIII rowsort
+SELECT abs(a),
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       a
+  FROM t1
+----
+query IIII rowsort
+SELECT c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a+b*2
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query I rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE a>b
+----
+17 values hashing to baeb6fdb5d575870fddf7d11fa9e02f3
+
+query III rowsort
+SELECT a+b*2,
+       abs(a),
+       d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       c,
+       a-b
+  FROM t1
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       a+b*2+c*3
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND a IS NULL
+----
+
+query IIIIII rowsort
+SELECT d,
+       a+b*2+c*3,
+       a+b*2,
+       abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+   AND (a>b-2 AND a<b+2)
+----
+24 values hashing to 28810046b3ff561c711ea12c0e7262e2
+
+query IIIIIII rowsort
+SELECT c-d,
+       a-b,
+       a+b*2+c*3,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       a
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR c BETWEEN b-2 AND d+2
+    OR a IS NULL
+----
+query II rowsort
+SELECT e,
+       b-c
+  FROM t1
+----
+query IIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       a,
+       a+b*2+c*3+d*4+e*5,
+       c-d,
+       d,
+       b
+  FROM t1
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       b,
+       a+b*2+c*3
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d
+  FROM t1
+ WHERE c>d
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query I rowsort
+SELECT d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND a IS NULL
+----
+114
+207
+
+query IIIIII rowsort
+SELECT abs(a),
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d
+  FROM t1
+ WHERE c>d
+   AND a>b
+----
+30 values hashing to 4882a7b37f5f60ec3315c36089f85019
+
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+----
+
+query IIIIII rowsort
+SELECT e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3,
+       d,
+       a-b,
+       abs(b-c)
+  FROM t1
+ WHERE b>c
+----
+query III rowsort
+SELECT abs(a),
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+    OR c>d
+----
+query IIIII rowsort
+SELECT c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       b-c,
+       a
+  FROM t1
+ WHERE a>b
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       c,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND coalesce(a,b,c,d,e)<>0
+   AND (e>c OR e<d)
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+   AND (e>c OR e<d)
+----
+24 values hashing to d7da9e3217f7e7a0590a488605f5f3b2
+
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+30 values hashing to 0075716954dbc259c5e8ac65568a6fa7
+
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE d>e
+----
+query IIII rowsort
+SELECT b,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       d
+  FROM t1
+ WHERE b IS NOT NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIII rowsort
+SELECT a+b*2,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e
+  FROM t1
+ WHERE a>b
+    OR c>d
+    OR (e>c OR e<d)
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       b-c,
+       a+b*2+c*3+d*4,
+       d-e,
+       abs(b-c)
+  FROM t1
+ WHERE b IS NOT NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT abs(b-c),
+       abs(a),
+       a+b*2+c*3+d*4+e*5,
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT b-c,
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b IS NOT NULL
+    OR (e>c OR e<d)
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       e
+  FROM t1
+ WHERE b>c
+   AND a>b
+   AND c BETWEEN b-2 AND d+2
+----
+468
+4294967294
+230
+
+query IIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b-c,
+       abs(b-c),
+       a+b*2+c*3+d*4,
+       c,
+       d-e,
+       d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND c>d
+----
+query III rowsort
+SELECT c,
+       abs(a),
+       e
+  FROM t1
+ WHERE b>c
+   AND b IS NOT NULL
+----
+query II rowsort
+SELECT abs(b-c),
+       b-c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+----
+query IIII rowsort
+SELECT abs(a),
+       a+b*2,
+       d-e,
+       e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR c BETWEEN b-2 AND d+2
+    OR b>c
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a
+  FROM t1
+----
+query III rowsort
+SELECT d,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       b-c
+  FROM t1
+----
+query IIII rowsort
+SELECT b,
+       abs(b-c),
+       c-d,
+       a+b*2
+  FROM t1
+ WHERE d>e
+    OR (e>a AND e<b)
+    OR d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT abs(a),
+       a-b,
+       abs(b-c)
+  FROM t1
+ WHERE c>d
+    OR b>c
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       c,
+       a
+  FROM t1
+ WHERE b>c
+----
+52 values hashing to d4f46790ba9dab2bc834b3a11bad6c1e
+
+query III rowsort
+SELECT d-e,
+       d,
+       a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2
+  FROM t1
+----
+query IIIIII rowsort
+SELECT d,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR coalesce(a,b,c,d,e)<>0
+    OR (a>b-2 AND a<b+2)
+----
+query III rowsort
+SELECT a,
+       a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c>d
+   AND d>e
+----
+15 values hashing to 72e6195754920f8019bbbe90aef2bf4b
+
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       d,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query III rowsort
+SELECT b-c,
+       abs(b-c),
+       abs(a)
+  FROM t1
+ WHERE d>e
+   AND c BETWEEN b-2 AND d+2
+----
+query III rowsort
+SELECT b-c,
+       (a+b+c+d+e)/5,
+       a-b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR c>d
+----
+query IIIII rowsort
+SELECT a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c),
+       d,
+       d-e
+  FROM t1
+ WHERE b>c
+    OR b IS NOT NULL
+    OR (e>a AND e<b)
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+----
+query I rowsort
+SELECT b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       b,
+       c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND a IS NULL
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE a>b
+    OR (a>b-2 AND a<b+2)
+----
+19 values hashing to ef71540982bb2591f1fb19c7c2c1f7f1
+
+query II rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+   AND (a>b-2 AND a<b+2)
+----
+1300
+444
+1390
+111
+364
+333
+
+query IIIIII rowsort
+SELECT e,
+       c,
+       a+b*2+c*3,
+       b,
+       (a+b+c+d+e)/5,
+       abs(a)
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       a,
+       d,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d
+  FROM t1
+ WHERE d>e
+   AND c BETWEEN b-2 AND d+2
+   AND d NOT BETWEEN 110 AND 150
+----
+42 values hashing to 3ef926d58b775d3274375acd13bd2442
+
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a+b*2+c*3
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b-c,
+       a+b*2,
+       abs(a),
+       abs(b-c),
+       c-d,
+       a
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       b-c
+  FROM t1
+ WHERE b>c
+----
+query IIIII rowsort
+SELECT d,
+       a+b*2+c*3,
+       c-d,
+       a+b*2+c*3+d*4+e*5,
+       a-b
+  FROM t1
+ WHERE c>d
+   AND b>c
+   AND (e>c OR e<d)
+----
+10 values hashing to 65eb432e62fe81df3f27d38ebb86259b
+
+query II rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE b>c
+    OR a>b
+----
+query IIIIIII rowsort
+SELECT c-d,
+       abs(a),
+       a-b,
+       d,
+       b-c,
+       a,
+       e
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND b>c
+----
+14 values hashing to 01861e7101b9f7cd3d73cc2b591dba9e
+
+query III rowsort
+SELECT c,
+       e,
+       c-d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR coalesce(a,b,c,d,e)<>0
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR d NOT BETWEEN 110 AND 150
+    OR a>b
+----
+query III rowsort
+SELECT b-c,
+       d,
+       abs(b-c)
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>a AND e<b)
+----
+9 values hashing to 9c66d72b0e6625200641f57829d28bc9
+
+query IIIIII rowsort
+SELECT abs(b-c),
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c,
+       abs(b-c)
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(a),
+       d
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       a
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIII rowsort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT c-d,
+       b,
+       a,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3
+  FROM t1
+----
+query IIIII rowsort
+SELECT c,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2
+  FROM t1
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a-b,
+       c,
+       (a+b+c+d+e)/5,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+   AND a>b
+----
+2
+106
+107
+4294967295
+333
+317
+1612
+
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       b,
+       abs(a),
+       (a+b+c+d+e)/5,
+       a
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2,
+       d
+  FROM t1
+ WHERE c>d
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       c,
+       b-c
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT b,
+       b-c,
+       a+b*2,
+       c,
+       e,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIII rowsort
+SELECT c-d,
+       (a+b+c+d+e)/5,
+       abs(a),
+       a
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d>e
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       b,
+       a+b*2
+  FROM t1
+----
+query II rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+   AND (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       abs(a),
+       d-e,
+       abs(b-c)
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>a AND e<b)
+----
+21 values hashing to ca3a61a32b63003d7230fc218bdb8c18
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3,
+       d-e,
+       a
+  FROM t1
+ WHERE a>b
+   AND (e>a AND e<b)
+----
+
+query IIIIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       d-e,
+       c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a IS NULL
+   AND coalesce(a,b,c,d,e)<>0
+----
+
+query IIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE a>b
+----
+query IIIIII rowsort
+SELECT d-e,
+       b-c,
+       b,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to 3b2c4e9b324c3ac7ff24d57ebf30792e
+
+query I rowsort
+SELECT d-e
+  FROM t1
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       b-c,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND (e>a AND e<b)
+----
+
+query I rowsort
+SELECT d
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND c>d
+   AND (e>c OR e<d)
+----
+1030
+1096
+1121
+1277
+1338
+793
+827
+851
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       d-e,
+       abs(a),
+       a+b*2,
+       a+b*2+c*3+d*4+e*5,
+       a
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       a-b
+  FROM t1
+----
+query I rowsort
+SELECT d
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND c>d
+   AND a>b
+----
+
+query IIIIII rowsort
+SELECT e,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND coalesce(a,b,c,d,e)<>0
+----
+12 values hashing to cb43ec7c1b98649d83c3cdb5cd0cf153
+
+query IIII rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3,
+       e,
+       b-c,
+       c-d,
+       a+b*2
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+14 values hashing to 9fe232cb1ff89995ca84b9f5820e9ecc
+
+query IIIIII rowsort
+SELECT c,
+       a,
+       a+b*2+c*3,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIII rowsort
+SELECT a-b,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       a,
+       c
+  FROM t1
+ WHERE a>b
+----
+query IIII rowsort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       b-c
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR d NOT BETWEEN 110 AND 150
+----
+query II rowsort
+SELECT c-d,
+       a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR d>e
+----
+query II rowsort
+SELECT b-c,
+       a+b*2
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+20 values hashing to c399b2a69ec073e998acaaa171988138
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+    OR (a>b-2 AND a<b+2)
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT d,
+       a-b,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c)
+  FROM t1
+----
+query II rowsort
+SELECT a-b,
+       e
+  FROM t1
+ WHERE a>b
+    OR (e>a AND e<b)
+----
+query I rowsort
+SELECT c
+  FROM t1
+----
+query IIIII rowsort
+SELECT abs(a),
+       a-b,
+       e,
+       a+b*2+c*3+d*4+e*5,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a>b
+----
+query IIIIIII rowsort
+SELECT c,
+       d,
+       abs(b-c),
+       e,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND a>b
+   AND c BETWEEN b-2 AND d+2
+----
+56 values hashing to 25db4c918a058a36859b7aa42bcafe2c
+
+query IIII rowsort
+SELECT a,
+       a+b*2+c*3,
+       c,
+       d-e
+  FROM t1
+----
+query IIIIII rowsort
+SELECT abs(a),
+       b-c,
+       b,
+       a+b*2,
+       d,
+       c
+  FROM t1
+ WHERE c>d
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+132
+135
+144
+157
+165
+180
+197
+227
+
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a)
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT a+b*2,
+       d-e,
+       b,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+317
+4294967295
+105
+2
+385
+2
+129
+4294967294
+
+query I rowsort
+SELECT a-b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       c,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR a IS NULL
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a,
+       d-e
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to 35cfabc386423f291055b6d126e2a6b4
+
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a,
+       d-e
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d>e
+   AND a IS NULL
+----
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(b-c),
+       b-c,
+       a+b*2+c*3,
+       c,
+       a+b*2,
+       abs(a)
+  FROM t1
+ WHERE a IS NULL
+   AND d NOT BETWEEN 110 AND 150
+   AND coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT a+b*2
+  FROM t1
+ WHERE d>e
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       a,
+       a+b*2
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       b-c
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIIIII rowsort
+SELECT a-b,
+       d,
+       b-c,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c>d
+    OR b IS NOT NULL
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       a+b*2
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT e,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       a
+  FROM t1
+ WHERE b>c
+   AND d>e
+   AND c>d
+----
+135
+827
+2046
+138
+
+query IIIIII rowsort
+SELECT abs(a),
+       c-d,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT d-e,
+       e,
+       abs(a),
+       a-b,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+----
+query II rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR c>d
+    OR c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2,
+       d-e,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR coalesce(a,b,c,d,e)<>0
+    OR a>b
+----
+query III rowsort
+SELECT b-c,
+       a-b,
+       a+b*2
+  FROM t1
+ WHERE b>c
+    OR d NOT BETWEEN 110 AND 150
+    OR c>d
+----
+query IIIIII rowsort
+SELECT e,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       abs(b-c),
+       a+b*2+c*3
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       abs(a),
+       c
+  FROM t1
+ WHERE a IS NULL
+   AND a>b
+   AND b>c
+----
+
+query II rowsort
+SELECT a,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND coalesce(a,b,c,d,e)<>0
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+107
+4294967295
+
+query IIII rowsort
+SELECT a+b*2,
+       c-d,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR a>b
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a,
+       c-d,
+       abs(b-c),
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+----
+12 values hashing to ae0204c4a0a839141313e05275f7f8ec
+
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+    OR (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT d,
+       abs(b-c),
+       e,
+       c-d,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b
+  FROM t1
+ WHERE d>e
+    OR a IS NULL
+    OR (e>a AND e<b)
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a-b,
+       c,
+       e,
+       a+b*2,
+       b,
+       b-c
+  FROM t1
+ WHERE a>b
+----
+query III rowsort
+SELECT a,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2
+  FROM t1
+ WHERE a>b
+----
+17 values hashing to f01f261c87a9f0c06faff19e25381595
+
+query IIIIIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4,
+       c,
+       a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       b-c
+  FROM t1
+----
+query IIII rowsort
+SELECT a-b,
+       d-e,
+       e,
+       c
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       c-d,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND b IS NOT NULL
+   AND (e>a AND e<b)
+----
+12 values hashing to 2612a47b9771c024d5700cdeb5627385
+
+query II rowsort
+SELECT c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR (e>a AND e<b)
+    OR d>e
+----
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a)
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+   AND (e>c OR e<d)
+----
+444
+220
+444
+245
+
+query IIII rowsort
+SELECT e,
+       a+b*2,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       (a+b+c+d+e)/5,
+       abs(a),
+       b-c,
+       a
+  FROM t1
+ WHERE b IS NOT NULL
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT d,
+       c,
+       b-c,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+ WHERE a IS NULL
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b,
+       abs(a),
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+222
+129
+127
+1272
+333
+105
+107
+1067
+
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       d,
+       a+b*2,
+       a,
+       e,
+       abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIII rowsort
+SELECT a,
+       d,
+       a+b*2+c*3+d*4+e*5,
+       abs(a),
+       a-b,
+       b
+  FROM t1
+ WHERE b>c
+   AND b IS NOT NULL
+   AND coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT b-c,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query IIIIII rowsort
+SELECT d-e,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       b,
+       b-c
+  FROM t1
+ WHERE d>e
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT b-c,
+       a+b*2+c*3,
+       a,
+       c-d,
+       d-e,
+       d,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR (e>a AND e<b)
+    OR a>b
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       abs(a),
+       b,
+       a-b,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b IS NOT NULL
+----
+12 values hashing to 2856e911a0591510133dc958cb5ca0a7
+
+query IIIIIII rowsort
+SELECT d,
+       a+b*2,
+       b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+    OR a IS NULL
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR b IS NOT NULL
+    OR a>b
+----
+query IIIIIII rowsort
+SELECT a-b,
+       a+b*2+c*3+d*4,
+       d-e,
+       d,
+       c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e
+  FROM t1
+ WHERE a IS NULL
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(a),
+       d-e
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d>e
+   AND (a>b-2 AND a<b+2)
+----
+9 values hashing to fc4976b0275200cd9bb551d01aabfdd1
+
+query II rowsort
+SELECT abs(b-c),
+       e
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (a>b-2 AND a<b+2)
+    OR d>e
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a),
+       (a+b+c+d+e)/5,
+       b
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+----
+query II rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c
+  FROM t1
+----
+query III rowsort
+SELECT a,
+       abs(b-c),
+       a+b*2+c*3
+  FROM t1
+ WHERE a>b
+    OR b IS NOT NULL
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE b>c
+   AND d>e
+   AND a>b
+----
+1391
+232
+333
+232
+
+query IIIIII rowsort
+SELECT b-c,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       a-b
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to bbd20434c02fd75bd840a59e034aa9ec
+
+query III rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT c-d,
+       a
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR (a>b-2 AND a<b+2)
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT a-b,
+       a+b*2,
+       (a+b+c+d+e)/5,
+       b
+  FROM t1
+ WHERE b>c
+   AND a IS NULL
+----
+
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       d-e,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (a>b-2 AND a<b+2)
+   AND a IS NULL
+----
+
+query II rowsort
+SELECT b-c,
+       a+b*2+c*3
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       e,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c>d
+----
+query IIIII rowsort
+SELECT c,
+       a+b*2+c*3,
+       a,
+       e,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND d NOT BETWEEN 110 AND 150
+   AND a IS NULL
+----
+
+query IIIIII rowsort
+SELECT d-e,
+       d,
+       abs(b-c),
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c
+  FROM t1
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d NOT BETWEEN 110 AND 150
+   AND b>c
+----
+382
+193
+2878
+490
+247
+3706
+
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d>e
+----
+query II rowsort
+SELECT a+b*2,
+       b-c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (e>c OR e<d)
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d,
+       abs(a),
+       a-b
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND a IS NULL
+----
+query II rowsort
+SELECT c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c,
+       c-d,
+       b-c,
+       b
+  FROM t1
+ WHERE a IS NULL
+    OR d>e
+----
+query IIIII rowsort
+SELECT d-e,
+       b,
+       e,
+       abs(a),
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE b>c
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b IS NOT NULL
+----
+27 values hashing to 6fd287cce691ba8fbdb5ef7ccbc4fc6c
+
+query IIIIII rowsort
+SELECT d-e,
+       a,
+       e,
+       a-b,
+       c,
+       b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       a+b*2
+  FROM t1
+ WHERE d>e
+    OR d NOT BETWEEN 110 AND 150
+    OR (e>c OR e<d)
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       c-d
+  FROM t1
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND d>e
+   AND b>c
+----
+234
+245
+
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       c-d,
+       e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR c BETWEEN b-2 AND d+2
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE d>e
+   AND coalesce(a,b,c,d,e)<>0
+   AND c BETWEEN b-2 AND d+2
+----
+9 values hashing to 473df6f4a1f991c876ee5eb903f86cbb
+
+query I rowsort
+SELECT a+b*2
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND d>e
+----
+query IIII rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+   AND a IS NULL
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a,
+       b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c
+  FROM t1
+ WHERE b>c
+   AND d>e
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+1902
+127
+129
+1290
+4
+
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b,
+       (a+b+c+d+e)/5,
+       a
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       b-c,
+       c,
+       a+b*2+c*3+d*4+e*5,
+       a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       a-b,
+       a,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d
+  FROM t1
+ WHERE a>b
+   AND c>d
+----
+35 values hashing to afa92be352dd8bdf0dfb506f388ac003
+
+query IIIIIII rowsort
+SELECT abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       d
+  FROM t1
+----
+query II rowsort
+SELECT c-d,
+       a-b
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR b>c
+    OR a>b
+----
+query IIII rowsort
+SELECT a,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE b>c
+----
+query IIII rowsort
+SELECT a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       b,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       abs(b-c)
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND b IS NOT NULL
+----
+query IIII rowsort
+SELECT abs(a),
+       c,
+       c-d,
+       b
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b-c,
+       c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+   AND a IS NULL
+----
+
+query IIIII rowsort
+SELECT a+b*2,
+       a-b,
+       d,
+       c,
+       d-e
+  FROM t1
+----
+query IIII rowsort
+SELECT c,
+       abs(b-c),
+       a+b*2+c*3,
+       abs(a)
+  FROM t1
+ WHERE d>e
+   AND a>b
+----
+query IIIII rowsort
+SELECT d,
+       abs(a),
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c)
+  FROM t1
+----
+query III rowsort
+SELECT c-d,
+       a+b*2,
+       b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT a,
+       e,
+       d-e,
+       b,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b,
+       a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5,
+       a-b,
+       d-e,
+       c-d
+  FROM t1
+ WHERE a>b
+    OR (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2
+  FROM t1
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c BETWEEN b-2 AND d+2
+----
+query I rowsort
+SELECT a
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+    OR d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND a IS NULL
+   AND a>b
+----
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       b-c,
+       e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e
+  FROM t1
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c),
+       a-b,
+       a+b*2+c*3+d*4,
+       d-e
+  FROM t1
+ WHERE b>c
+   AND c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query III rowsort
+SELECT abs(a),
+       a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR c BETWEEN b-2 AND d+2
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       abs(a)
+  FROM t1
+ WHERE d>e
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE a>b
+----
+query IIIIIII rowsort
+SELECT c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       a+b*2+c*3+d*4,
+       d-e,
+       abs(b-c)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND d>e
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       b-c
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+9 values hashing to 5f380d42b2e9cc3456910821e835ced0
+
+query IIII rowsort
+SELECT d,
+       c,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+108
+106
+635
+4294967295
+
+query IIIII rowsort
+SELECT d-e,
+       b,
+       c,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3
+  FROM t1
+ WHERE a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+4294967295
+105
+106
+1067
+635
+
+query IIIIIII rowsort
+SELECT e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       a+b*2,
+       d
+  FROM t1
+ WHERE a>b
+----
+query IIIII rowsort
+SELECT abs(a),
+       c,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       a
+  FROM t1
+ WHERE a>b
+----
+query IIIIII rowsort
+SELECT c-d,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+----
+query IIII rowsort
+SELECT b,
+       abs(b-c),
+       a+b*2+c*3,
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       b,
+       d,
+       a+b*2+c*3,
+       a,
+       a-b
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+21 values hashing to 9141429c76a27ccf41c9e57922291aba
+
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       a,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query II rowsort
+SELECT abs(b-c),
+       b-c
+  FROM t1
+ WHERE c>d
+    OR a>b
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIIII rowsort
+SELECT b-c,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       a+b*2+c*3
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       c-d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to 03d734d219a8bfd706c9bea048e60ac1
+
+query IIIII rowsort
+SELECT a-b,
+       d,
+       d-e,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       abs(a),
+       b
+  FROM t1
+ WHERE b>c
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+----
+query IIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c,
+       a,
+       e
+  FROM t1
+ WHERE a>b
+----
+query IIII rowsort
+SELECT b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE d>e
+   AND a>b
+   AND b>c
+----
+3473
+468
+
+query III rowsort
+SELECT d-e,
+       b-c,
+       d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+2
+4
+128
+4294967295
+4294967295
+108
+
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR b>c
+    OR d>e
+----
+query IIIII rowsort
+SELECT b-c,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE d>e
+----
+query I rowsort
+SELECT c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       b,
+       a-b,
+       a,
+       a+b*2
+  FROM t1
+ WHERE c>d
+   AND a IS NULL
+   AND (e>a AND e<b)
+----
+
+query IIIIII rowsort
+SELECT c,
+       a+b*2+c*3+d*4,
+       a+b*2,
+       (a+b+c+d+e)/5,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b>c
+    OR d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND c>d
+----
+query IIIIIII rowsort
+SELECT a-b,
+       c-d,
+       (a+b+c+d+e)/5,
+       d,
+       d-e,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND (e>c OR e<d)
+   AND d NOT BETWEEN 110 AND 150
+----
+2728
+2949
+3399
+
+query IIIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query III rowsort
+SELECT d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+108
+333
+107
+128
+333
+127
+
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       c,
+       d,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c)
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(b-c),
+       c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT abs(a),
+       e,
+       a+b*2+c*3+d*4+e*5,
+       b,
+       abs(b-c)
+  FROM t1
+----
+query IIIII rowsort
+SELECT a+b*2+c*3,
+       abs(a),
+       a+b*2,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT a-b,
+       a+b*2,
+       d,
+       a+b*2+c*3,
+       abs(b-c)
+  FROM t1
+----
+query II rowsort
+SELECT abs(b-c),
+       a+b*2
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       c-d,
+       abs(a),
+       d,
+       b-c
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR c BETWEEN b-2 AND d+2
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       a-b,
+       b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       c-d,
+       a-b,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIII rowsort
+SELECT a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND a IS NULL
+   AND b>c
+----
+
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (e>a AND e<b)
+   AND b>c
+----
+246
+
+query III rowsort
+SELECT c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR c>d
+    OR (e>c OR e<d)
+----
+26 values hashing to 7a8d46383299881e3dde16b0a655ff61
+
+query IIII rowsort
+SELECT a,
+       abs(b-c),
+       a+b*2,
+       a+b*2+c*3
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR c BETWEEN b-2 AND d+2
+    OR (e>a AND e<b)
+----
+query III rowsort
+SELECT d-e,
+       e,
+       c-d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+2
+126
+4294967293
+4294967295
+109
+4294967294
+
+query I rowsort
+SELECT abs(a)
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2
+  FROM t1
+----
+query IIII rowsort
+SELECT d-e,
+       a-b,
+       b,
+       c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query I rowsort
+SELECT abs(b-c)
+  FROM t1
+----
+query II rowsort
+SELECT e,
+       c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR (e>c OR e<d)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query IIII rowsort
+SELECT d,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+ WHERE a IS NULL
+----
+query IIII rowsort
+SELECT b,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (e>a AND e<b)
+   AND b>c
+----
+249
+4294967292
+111
+247
+
+query IIIIIII rowsort
+SELECT b,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       a+b*2,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+ WHERE b IS NOT NULL
+    OR (e>c OR e<d)
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+192
+2878
+222
+3331
+247
+3706
+
+query II rowsort
+SELECT a,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query III rowsort
+SELECT d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE a IS NULL
+    OR a>b
+    OR b>c
+----
+query IIIIIII rowsort
+SELECT a,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       a-b
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR a IS NULL
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+1067
+2
+1272
+4294967294
+
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+----
+query IIIIIII rowsort
+SELECT a+b*2,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       a-b,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       c,
+       abs(b-c),
+       d,
+       e,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       (a+b+c+d+e)/5,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query III rowsort
+SELECT a,
+       d-e,
+       e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (a>b-2 AND a<b+2)
+----
+
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE a IS NULL
+    OR b IS NOT NULL
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c-d,
+       b,
+       e,
+       c
+  FROM t1
+----
+query IIIII rowsort
+SELECT d-e,
+       a+b*2+c*3+d*4,
+       abs(a),
+       e,
+       c-d
+  FROM t1
+----
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b>c
+----
+13 values hashing to 26ce2a46fa9ea4ff61793fcfe9ac0168
+
+query IIII rowsort
+SELECT abs(a),
+       d-e,
+       a,
+       a+b*2+c*3
+  FROM t1
+ WHERE a>b
+----
+query I rowsort
+SELECT b
+  FROM t1
+ WHERE a IS NULL
+    OR c>d
+----
+query IIIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       e,
+       a+b*2,
+       b
+  FROM t1
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       a
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND coalesce(a,b,c,d,e)<>0
+   AND b>c
+----
+192
+191
+191
+247
+245
+245
+
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       c
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND coalesce(a,b,c,d,e)<>0
+   AND (a>b-2 AND a<b+2)
+----
+
+query IIIIIII rowsort
+SELECT d-e,
+       c-d,
+       abs(b-c),
+       c,
+       abs(a),
+       a-b,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b>c
+   AND a>b
+----
+
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+----
+
+query IIIIII rowsort
+SELECT a-b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d
+  FROM t1
+ WHERE a>b
+----
+query IIIII rowsort
+SELECT c-d,
+       a+b*2,
+       d,
+       c,
+       abs(a)
+  FROM t1
+ WHERE a IS NULL
+    OR b>c
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR a>b
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE d>e
+    OR c>d
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       b,
+       b-c,
+       e,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+21 values hashing to 066b10457b7c299e793e1069e797c3b0
+
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       c-d,
+       d-e,
+       b-c,
+       a+b*2,
+       b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       b,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query II rowsort
+SELECT b,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a>b
+----
+query IIIII rowsort
+SELECT a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       d-e,
+       e
+  FROM t1
+ WHERE a>b
+    OR b IS NOT NULL
+    OR d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT b-c
+  FROM t1
+ WHERE c>d
+----
+query III rowsort
+SELECT d-e,
+       a,
+       a+b*2
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND (e>c OR e<d)
+----
+2
+127
+385
+4294967295
+107
+317
+
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       d-e,
+       c-d,
+       a+b*2+c*3+d*4+e*5,
+       b
+  FROM t1
+ WHERE a>b
+    OR c BETWEEN b-2 AND d+2
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       d-e,
+       abs(a),
+       a-b,
+       b,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       e,
+       a+b*2,
+       abs(b-c)
+  FROM t1
+ WHERE a>b
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR d>e
+    OR (e>a AND e<b)
+----
+query IIIIIII rowsort
+SELECT c,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       (a+b+c+d+e)/5,
+       d-e,
+       a-b
+  FROM t1
+ WHERE a>b
+    OR d>e
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b-c,
+       a,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT e,
+       a+b*2+c*3,
+       a+b*2,
+       a,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR b>c
+    OR c>d
+----
+query I rowsort
+SELECT d
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       b,
+       e,
+       a+b*2
+  FROM t1
+ WHERE a>b
+   AND d>e
+----
+query IIIIII rowsort
+SELECT c,
+       a+b*2+c*3,
+       abs(b-c),
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       a-b,
+       b,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       abs(a)
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+9 values hashing to ff5672242c140167742776faeedff9ef
+
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       d-e,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d
+  FROM t1
+ WHERE b>c
+    OR d NOT BETWEEN 110 AND 150
+    OR a IS NULL
+----
+query II rowsort
+SELECT a+b*2,
+       a
+  FROM t1
+ WHERE a IS NULL
+    OR c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT a-b,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND b>c
+   AND d NOT BETWEEN 110 AND 150
+----
+20 values hashing to 3bfb1d7c05e5f4d6305808f7e9798c14
+
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d
+  FROM t1
+ WHERE d>e
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       b
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       c-d,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       a+b*2
+  FROM t1
+ WHERE b>c
+    OR b IS NOT NULL
+    OR c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b,
+       c-d,
+       b-c
+  FROM t1
+----
+query IIII rowsort
+SELECT c-d,
+       b-c,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (e>c OR e<d)
+----
+query IIII rowsort
+SELECT e,
+       d-e,
+       d,
+       c
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR (a>b-2 AND a<b+2)
+    OR (e>c OR e<d)
+----
+query II rowsort
+SELECT a,
+       d-e
+  FROM t1
+----
+query IIIII rowsort
+SELECT abs(b-c),
+       a-b,
+       d,
+       b,
+       a
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND d>e
+   AND c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT a-b,
+       e,
+       d,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+   AND b IS NOT NULL
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       a
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND b IS NOT NULL
+----
+query II rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+16 values hashing to dcd85f2511e1fdd58356140f1a457c8f
+
+query III rowsort
+SELECT d,
+       c,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND d>e
+   AND coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b>c
+----
+125
+
+query III rowsort
+SELECT b,
+       a+b*2+c*3+d*4,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR (e>c OR e<d)
+    OR a IS NULL
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       a,
+       b-c
+  FROM t1
+ WHERE c>d
+   AND (e>c OR e<d)
+----
+24 values hashing to 28b7caa0937e083eae975a77e8f94e5f
+
+query IIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT c,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       b-c
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (a>b-2 AND a<b+2)
+   AND b IS NOT NULL
+----
+query III rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE d>e
+    OR d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT d
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e
+  FROM t1
+ WHERE c>d
+----
+query IIIIIII rowsort
+SELECT c,
+       e,
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b,
+       d-e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       d-e,
+       e
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       d-e,
+       d
+  FROM t1
+ WHERE d>e
+   AND b>c
+   AND a IS NULL
+----
+
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       b,
+       a,
+       a+b*2+c*3+d*4,
+       d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       b-c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR c BETWEEN b-2 AND d+2
+    OR c>d
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a-b,
+       abs(b-c),
+       c,
+       b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND a IS NULL
+----
+query IIIIIII rowsort
+SELECT abs(b-c),
+       b,
+       e,
+       d-e,
+       a-b,
+       a+b*2+c*3,
+       c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT b-c,
+       abs(b-c),
+       d-e,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+12 values hashing to bf747a4ab12c77de6cda36e98bb4f6d8
+
+query II rowsort
+SELECT c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE b IS NOT NULL
+   AND a IS NULL
+   AND (e>a AND e<b)
+----
+
+query II rowsort
+SELECT abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE c>d
+----
+query III rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT c,
+       d-e,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       a-b,
+       c
+  FROM t1
+ WHERE a IS NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR a>b
+----
+query IIIII rowsort
+SELECT e,
+       a+b*2+c*3+d*4,
+       d,
+       c-d,
+       a-b
+  FROM t1
+----
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND c>d
+   AND b IS NOT NULL
+----
+11 values hashing to 2cd88c51b10d491c3070d3598710ffd2
+
+query II rowsort
+SELECT c,
+       e
+  FROM t1
+ WHERE a>b
+----
+query IIIII rowsort
+SELECT e,
+       d,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a>b
+    OR b>c
+----
+query IIIIIII rowsort
+SELECT c,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       e,
+       a+b*2,
+       abs(b-c)
+  FROM t1
+ WHERE c>d
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       a-b,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE b>c
+    OR b IS NOT NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       c-d,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a-b,
+       a+b*2+c*3+d*4+e*5,
+       b-c
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIIII rowsort
+SELECT e,
+       a+b*2+c*3+d*4,
+       b,
+       abs(a),
+       c,
+       a+b*2
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT a,
+       a+b*2,
+       b,
+       abs(a),
+       e
+  FROM t1
+ WHERE a IS NULL
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c,
+       abs(b-c),
+       a
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       e,
+       (a+b+c+d+e)/5,
+       a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIII rowsort
+SELECT a,
+       b,
+       (a+b+c+d+e)/5,
+       b-c,
+       a+b*2+c*3+d*4,
+       d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c,
+       e
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       a+b*2+c*3+d*4+e*5,
+       c-d,
+       b-c,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query II rowsort
+SELECT abs(a),
+       a+b*2+c*3
+  FROM t1
+ WHERE d>e
+    OR (e>c OR e<d)
+    OR b>c
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       d-e,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+1
+1
+1
+1
+1
+1
+4294967295
+4294967295
+
+query III rowsort
+SELECT e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2
+  FROM t1
+----
+query II rowsort
+SELECT abs(b-c),
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR (a>b-2 AND a<b+2)
+----
+query III rowsort
+SELECT abs(b-c),
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+----
+45 values hashing to 98dcf32c93ac7c829ddc2c7792e7fa47
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       b-c,
+       c,
+       a+b*2+c*3
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b IS NOT NULL
+----
+12 values hashing to 082baeaa3556c9d8b56c33b00e13c281
+
+query IIII rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c
+  FROM t1
+ WHERE d>e
+   AND b>c
+----
+16 values hashing to 6672a14b46092ffcc377e7aa913dba24
+
+query II rowsort
+SELECT a+b*2+c*3+d*4,
+       b-c
+  FROM t1
+ WHERE a>b
+    OR d>e
+----
+query IIIIIII rowsort
+SELECT c,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       b-c,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       a-b,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT a+b*2,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d>e
+   AND a IS NULL
+----
+
+query IIIIIII rowsort
+SELECT c,
+       a,
+       abs(a),
+       c-d,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND coalesce(a,b,c,d,e)<>0
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query I rowsort
+SELECT b-c
+  FROM t1
+ WHERE b>c
+    OR a>b
+----
+query IIIIIII rowsort
+SELECT d,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       e,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT b-c,
+       a-b,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR c BETWEEN b-2 AND d+2
+    OR (a>b-2 AND a<b+2)
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       b-c,
+       abs(a),
+       c,
+       d-e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to f25bbf9329b51cbe9899b8deaa6859aa
+
+query III rowsort
+SELECT a+b*2,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT e,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c-d,
+       e
+  FROM t1
+----
+query IIIII rowsort
+SELECT a+b*2+c*3,
+       c,
+       abs(a),
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b IS NOT NULL
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(a),
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       d,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT e,
+       b,
+       d-e,
+       b-c,
+       abs(a),
+       c-d,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d>e
+   AND (a>b-2 AND a<b+2)
+   AND b IS NOT NULL
+----
+21 values hashing to 830c817a1c1a868c2fe326f95e628009
+
+query IIIII rowsort
+SELECT d,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a>b
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE d>e
+----
+44 values hashing to a35c708e4e041f7d2a699f8d190ea386
+
+query II rowsort
+SELECT c,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND c>d
+----
+20 values hashing to 6abfac744298c9287cb5e9c3b28353d2
+
+query I rowsort
+SELECT b-c
+  FROM t1
+----
+query III rowsort
+SELECT c,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b IS NOT NULL
+----
+query II rowsort
+SELECT e,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+16 values hashing to 69b3e7b95783b4ff9ed5b7ad6bc2ad50
+
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       c-d
+  FROM t1
+----
+query III rowsort
+SELECT a-b,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT abs(a),
+       a+b*2,
+       a-b,
+       a+b*2+c*3,
+       abs(b-c)
+  FROM t1
+ WHERE c>d
+----
+query III rowsort
+SELECT b,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+----
+query IIIIIII rowsort
+SELECT c-d,
+       abs(a),
+       a+b*2,
+       a+b*2+c*3+d*4,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIIII rowsort
+SELECT e,
+       a,
+       abs(b-c),
+       c-d,
+       a-b,
+       a+b*2+c*3+d*4,
+       b-c
+  FROM t1
+ WHERE a>b
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b,
+       (a+b+c+d+e)/5,
+       a,
+       abs(a)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       a,
+       e,
+       c,
+       b-c,
+       abs(b-c)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+14 values hashing to 6c75a39cd730d5c19b2156e7c2167b9d
+
+query IIII rowsort
+SELECT c-d,
+       a+b*2,
+       abs(b-c),
+       d-e
+  FROM t1
+ WHERE a>b
+    OR b IS NOT NULL
+    OR c>d
+----
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       a+b*2,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       d-e,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       abs(b-c)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND b IS NOT NULL
+   AND (a>b-2 AND a<b+2)
+----
+
+query I rowsort
+SELECT d
+  FROM t1
+ WHERE a>b
+    OR d>e
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       a+b*2,
+       b-c,
+       c,
+       abs(a)
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND d>e
+----
+18 values hashing to 14a7cd4c144ab64c6f2c180a47ce8f8f
+
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       d,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4,
+       d-e,
+       b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b-c,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       a,
+       d-e,
+       abs(a)
+  FROM t1
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a)
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR a IS NULL
+    OR d>e
+----
+query IIIII rowsort
+SELECT a-b,
+       d-e,
+       b-c,
+       abs(a),
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR d>e
+    OR b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       c,
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR b IS NOT NULL
+    OR coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       b-c
+  FROM t1
+----
+query II rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+   AND d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT abs(b-c),
+       a+b*2,
+       a-b
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query I rowsort
+SELECT c
+  FROM t1
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND c>d
+   AND coalesce(a,b,c,d,e)<>0
+----
+16 values hashing to bd7947c5457e744f01ebc8129b7b04b9
+
+query IIIIII rowsort
+SELECT c-d,
+       d-e,
+       abs(a),
+       d,
+       c,
+       e
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND (e>c OR e<d)
+----
+12 values hashing to d96c408b9ff95b689373c20a00301add
+
+query IIIII rowsort
+SELECT a-b,
+       c-d,
+       abs(b-c),
+       d,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIIIII rowsort
+SELECT d-e,
+       abs(b-c),
+       a,
+       e,
+       b-c,
+       a+b*2+c*3,
+       a+b*2
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d>e
+   AND (e>c OR e<d)
+----
+14 values hashing to 13dd1a2670bfe778745f375d17842bd1
+
+query IIIIII rowsort
+SELECT c-d,
+       a,
+       a+b*2+c*3,
+       a+b*2,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE d>e
+    OR (e>a AND e<b)
+    OR (a>b-2 AND a<b+2)
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       a-b,
+       a+b*2+c*3+d*4,
+       abs(a),
+       a,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR a IS NULL
+    OR c>d
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       a+b*2+c*3+d*4,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIIIII rowsort
+SELECT d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       a+b*2+c*3,
+       a,
+       e
+  FROM t1
+ WHERE b>c
+   AND c>d
+   AND d NOT BETWEEN 110 AND 150
+----
+190
+382
+444
+4294967294
+1158
+191
+192
+
+query II rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (e>a AND e<b)
+   AND a IS NULL
+----
+
+query IIIIII rowsort
+SELECT a,
+       c-d,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query IIIII rowsort
+SELECT e,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       a,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND c>d
+   AND (e>c OR e<d)
+----
+
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       e,
+       a-b,
+       b,
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+12 values hashing to 3d042558bdac0a8964d2f9cb56594918
+
+query II rowsort
+SELECT b,
+       abs(b-c)
+  FROM t1
+----
+query I rowsort
+SELECT c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND b IS NOT NULL
+----
+
+query II rowsort
+SELECT b,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT c,
+       a+b*2
+  FROM t1
+----
+query I rowsort
+SELECT b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (a>b-2 AND a<b+2)
+----
+130
+139
+143
+158
+167
+181
+198
+228
+
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR b IS NOT NULL
+    OR c>d
+----
+29 values hashing to 4143176cb18370c4d088886500c7eca5
+
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       d,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIII rowsort
+SELECT a-b,
+       c-d,
+       (a+b+c+d+e)/5,
+       a
+  FROM t1
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       c,
+       c-d,
+       e,
+       abs(a)
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a,
+       c,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       b-c,
+       e,
+       a+b*2
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c)
+  FROM t1
+ WHERE b>c
+   AND (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+2878
+3331
+3706
+
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE d>e
+    OR b IS NOT NULL
+    OR (e>a AND e<b)
+----
+query III rowsort
+SELECT a+b*2,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b>c
+    OR coalesce(a,b,c,d,e)<>0
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b IS NOT NULL
+   AND a>b
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+----
+query IIII rowsort
+SELECT c,
+       d-e,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+ WHERE c>d
+    OR b>c
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIII rowsort
+SELECT e,
+       a,
+       a+b*2+c*3+d*4,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE c>d
+   AND a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query I rowsort
+SELECT c-d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       d,
+       c,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       c-d
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT d-e,
+       abs(b-c),
+       b,
+       a+b*2,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR c>d
+    OR (a>b-2 AND a<b+2)
+----
+query IIII rowsort
+SELECT d-e,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+----
+query III rowsort
+SELECT d,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE a>b
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND a>b
+----
+query IIIIIII rowsort
+SELECT a-b,
+       (a+b+c+d+e)/5,
+       c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+2
+107
+106
+333
+107
+1050
+1612
+
+query II rowsort
+SELECT a+b*2+c*3,
+       a
+  FROM t1
+----
+query IIII rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b IS NOT NULL
+    OR d>e
+    OR d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT b,
+       a+b*2,
+       a-b
+  FROM t1
+ WHERE a>b
+    OR (e>c OR e<d)
+----
+query II rowsort
+SELECT c-d,
+       abs(a)
+  FROM t1
+ WHERE b>c
+    OR d>e
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       d,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>a AND e<b)
+----
+
+query IIIIIII rowsort
+SELECT abs(a),
+       b,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       a+b*2,
+       b-c
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR a>b
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5,
+       c,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       e,
+       a+b*2,
+       d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(a),
+       abs(b-c),
+       b,
+       b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c>d
+----
+query II rowsort
+SELECT a,
+       a+b*2
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+----
+
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       b,
+       abs(a),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a,
+       a+b*2,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND (e>a AND e<b)
+   AND c BETWEEN b-2 AND d+2
+----
+
+query IIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       c,
+       d
+  FROM t1
+ WHERE d>e
+----
+query III rowsort
+SELECT abs(a),
+       c,
+       c-d
+  FROM t1
+ WHERE c>d
+    OR (e>a AND e<b)
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT b-c,
+       d-e,
+       abs(a)
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND d>e
+----
+query II rowsort
+SELECT a-b,
+       a+b*2
+  FROM t1
+ WHERE b>c
+    OR (e>a AND e<b)
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+30 values hashing to e429cf0ed704161a8490350725c555b8
+
+query IIIII rowsort
+SELECT a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND (a>b-2 AND a<b+2)
+   AND d NOT BETWEEN 110 AND 150
+----
+15 values hashing to 72624ed777207392cfe07406e9e48b78
+
+query II rowsort
+SELECT d,
+       e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2,
+       abs(b-c),
+       d-e,
+       a-b,
+       c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a,
+       b,
+       d-e,
+       a+b*2
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c,
+       a+b*2+c*3,
+       abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query II rowsort
+SELECT d-e,
+       abs(a)
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND (e>c OR e<d)
+----
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       d-e
+  FROM t1
+ WHERE c>d
+----
+query IIIIIII rowsort
+SELECT d,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       b,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a),
+       c,
+       a,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d>e
+----
+query IIII rowsort
+SELECT e,
+       a-b,
+       a+b*2+c*3,
+       a+b*2
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c BETWEEN b-2 AND d+2
+   AND d NOT BETWEEN 110 AND 150
+----
+query II rowsort
+SELECT abs(a),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+107
+1050
+127
+1290
+
+query II rowsort
+SELECT a,
+       abs(b-c)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+107
+1
+127
+4
+
+query III rowsort
+SELECT e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND b>c
+   AND b IS NOT NULL
+----
+18 values hashing to 336432886df11394b6e6727fa8b692ba
+
+query IIIIIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4,
+       d-e,
+       a+b*2+c*3,
+       b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d
+  FROM t1
+ WHERE d>e
+    OR b IS NOT NULL
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       a+b*2,
+       abs(a)
+  FROM t1
+----
+query I rowsort
+SELECT b
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND a IS NULL
+   AND d NOT BETWEEN 110 AND 150
+----
+206
+
+query II rowsort
+SELECT a-b,
+       e
+  FROM t1
+ WHERE c>d
+----
+query IIII rowsort
+SELECT abs(a),
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND a>b
+----
+107
+4294967295
+1050
+4294967294
+
+query IIIIII rowsort
+SELECT a-b,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c-d,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+18 values hashing to c62f766ed37831bec97ffdb4e0c11362
+
+query II rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2
+  FROM t1
+----
+query IIIII rowsort
+SELECT e,
+       a+b*2,
+       a,
+       d,
+       d-e
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+15 values hashing to ae968d49c0d6462ced96838dbfc14338
+
+query IIIIII rowsort
+SELECT b,
+       abs(a),
+       c-d,
+       e,
+       b-c,
+       c
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       abs(a),
+       b,
+       abs(b-c)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND c>d
+   AND (e>a AND e<b)
+----
+1158
+191
+194
+1
+1338
+220
+223
+1
+
+query IIII rowsort
+SELECT e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       d-e
+  FROM t1
+ WHERE c>d
+    OR (a>b-2 AND a<b+2)
+    OR (e>a AND e<b)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE b IS NOT NULL
+    OR d NOT BETWEEN 110 AND 150
+    OR a>b
+----
+query III rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIII rowsort
+SELECT d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       a-b
+  FROM t1
+ WHERE b IS NOT NULL
+    OR a IS NULL
+    OR (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query I rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d,
+       a+b*2+c*3+d*4,
+       a+b*2,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2,
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       b-c,
+       a-b
+  FROM t1
+ WHERE a IS NULL
+    OR (e>c OR e<d)
+----
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4,
+       a-b,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a>b
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+----
+query II rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE a>b
+    OR d>e
+----
+query I rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+1050
+1290
+
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE b>c
+   AND d NOT BETWEEN 110 AND 150
+   AND c>d
+----
+1158
+
+query I rowsort
+SELECT a+b*2
+  FROM t1
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       (a+b+c+d+e)/5,
+       b,
+       a+b*2,
+       a+b*2+c*3
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query III rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE b IS NOT NULL
+   AND b>c
+   AND c>d
+----
+query IIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e,
+       (a+b+c+d+e)/5,
+       abs(b-c)
+  FROM t1
+ WHERE b>c
+   AND coalesce(a,b,c,d,e)<>0
+   AND d NOT BETWEEN 110 AND 150
+----
+24 values hashing to 6283cf25cda2644d44611ceaea546b1f
+
+query IIIIIII rowsort
+SELECT b,
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3+d*4+e*5,
+       a-b
+  FROM t1
+----
+query IIIIII rowsort
+SELECT e,
+       a+b*2,
+       a-b,
+       a,
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE a IS NULL
+   AND (a>b-2 AND a<b+2)
+----
+
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+   AND (e>a AND e<b)
+----
+111
+222
+
+query IIIIIII rowsort
+SELECT c-d,
+       b,
+       e,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       b-c
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>c OR e<d)
+----
+query II rowsort
+SELECT a+b*2,
+       a-b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND d>e
+   AND d NOT BETWEEN 110 AND 150
+----
+14 values hashing to 7543229dac18edae94be20663d6a6537
+
+query IIIIII rowsort
+SELECT a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d,
+       b,
+       a-b,
+       c-d
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>c OR e<d)
+----
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND c>d
+----
+111
+137
+111
+142
+333
+182
+444
+132
+
+query I rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (a>b-2 AND a<b+2)
+   AND b IS NOT NULL
+----
+111
+111
+333
+444
+555
+555
+555
+555
+
+query II rowsort
+SELECT d-e,
+       c-d
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (e>c OR e<d)
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIIIII rowsort
+SELECT abs(b-c),
+       c,
+       e,
+       a+b*2,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d
+  FROM t1
+ WHERE a>b
+   AND b IS NOT NULL
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT c,
+       d-e,
+       e,
+       abs(a),
+       b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+   AND (e>c OR e<d)
+   AND coalesce(a,b,c,d,e)<>0
+----
+48 values hashing to 8ce9bd336b65f3d49d17b8b193db4ef4
+
+query II rowsort
+SELECT c-d,
+       d-e
+  FROM t1
+----
+query I rowsort
+SELECT a
+  FROM t1
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE a IS NULL
+    OR c>d
+----
+query IIIIIII rowsort
+SELECT b-c,
+       e,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND d>e
+   AND (a>b-2 AND a<b+2)
+----
+4294967293
+180
+1
+364
+2728
+333
+182
+
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       d,
+       e,
+       d-e
+  FROM t1
+----
+query II rowsort
+SELECT d,
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       a+b*2+c*3,
+       a-b,
+       a+b*2+c*3+d*4+e*5,
+       a
+  FROM t1
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+ WHERE a>b
+----
+17 values hashing to 607df2675d8afce922d44e8a606725c4
+
+query IIIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       c,
+       d
+  FROM t1
+ WHERE a>b
+----
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       abs(b-c)
+  FROM t1
+----
+query IIII rowsort
+SELECT abs(a),
+       a-b,
+       a+b*2+c*3+d*4,
+       a+b*2
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR b>c
+    OR (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT b-c,
+       e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND (a>b-2 AND a<b+2)
+   AND (e>c OR e<d)
+----
+
+query IIIIII rowsort
+SELECT a,
+       d-e,
+       abs(b-c),
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d
+  FROM t1
+ WHERE b>c
+    OR d>e
+    OR c>d
+----
+query IIIIIII rowsort
+SELECT abs(b-c),
+       (a+b+c+d+e)/5,
+       a+b*2+c*3,
+       c-d,
+       a+b*2,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a IS NULL
+   AND b>c
+----
+
+query IIIIII rowsort
+SELECT b,
+       d,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       d-e
+  FROM t1
+ WHERE b>c
+----
+query IIIIII rowsort
+SELECT e,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       c-d,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE a IS NULL
+    OR c>d
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       abs(a)
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       abs(a),
+       e,
+       c,
+       b
+  FROM t1
+----
+query IIII rowsort
+SELECT b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR (e>c OR e<d)
+----
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c),
+       a,
+       a+b*2+c*3+d*4+e*5,
+       abs(a)
+  FROM t1
+ WHERE c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query III rowsort
+SELECT abs(a),
+       c,
+       b-c
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b-c,
+       b,
+       c-d,
+       abs(a),
+       d
+  FROM t1
+ WHERE c>d
+   AND a IS NULL
+   AND a>b
+----
+
+query III rowsort
+SELECT a+b*2,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND b>c
+----
+
+query IIIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       e,
+       abs(b-c),
+       a-b,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c
+  FROM t1
+ WHERE a IS NULL
+----
+query III rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT b-c,
+       d-e
+  FROM t1
+----
+query II rowsort
+SELECT b-c,
+       e
+  FROM t1
+ WHERE d>e
+    OR c>d
+    OR a IS NULL
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       d-e,
+       c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       abs(a),
+       b-c,
+       e,
+       b
+  FROM t1
+----
+query IIIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       c-d
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND c BETWEEN b-2 AND d+2
+   AND d>e
+----
+10 values hashing to a93140aa5d54ad900df5026e57c22073
+
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a)
+  FROM t1
+ WHERE b IS NOT NULL
+    OR (e>c OR e<d)
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c>d
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND coalesce(a,b,c,d,e)<>0
+----
+
+query I rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND d>e
+----
+440
+490
+
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       e,
+       a+b*2+c*3+d*4,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a)
+  FROM t1
+ WHERE b>c
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       b-c,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>c OR e<d)
+    OR (a>b-2 AND a<b+2)
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query II rowsort
+SELECT a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT b,
+       a+b*2,
+       d,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b>c
+----
+query IIIII rowsort
+SELECT c-d,
+       a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c)
+  FROM t1
+ WHERE a>b
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIIII rowsort
+SELECT b-c,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       c-d,
+       (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR b IS NOT NULL
+----
+query II rowsort
+SELECT e,
+       a
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b IS NOT NULL
+    OR c>d
+----
+query II rowsort
+SELECT b-c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND (e>a AND e<b)
+   AND c>d
+----
+
+query IIIII rowsort
+SELECT e,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       (a+b+c+d+e)/5,
+       abs(b-c)
+  FROM t1
+ WHERE a>b
+   AND d>e
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       a-b,
+       b
+  FROM t1
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c-d,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+635
+1050
+4294967294
+2
+760
+1290
+4294967293
+4294967294
+
+query IIIIII rowsort
+SELECT a+b*2,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(a),
+       d-e,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query IIIIII rowsort
+SELECT abs(a),
+       (a+b+c+d+e)/5,
+       e,
+       a+b*2+c*3,
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE a IS NULL
+    OR (a>b-2 AND a<b+2)
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a-b
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d,
+       abs(a),
+       a+b*2+c*3+d*4+e*5,
+       b,
+       e
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR d NOT BETWEEN 110 AND 150
+    OR b>c
+----
+query III rowsort
+SELECT d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       e,
+       a,
+       a-b,
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       a+b*2,
+       b-c,
+       c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       d-e,
+       b-c,
+       d,
+       abs(a),
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT c-d,
+       b,
+       d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       (a+b+c+d+e)/5,
+       e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND coalesce(a,b,c,d,e)<>0
+   AND (e>c OR e<d)
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       b-c
+  FROM t1
+ WHERE a>b
+----
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a)
+  FROM t1
+ WHERE d>e
+    OR (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a,
+       (a+b+c+d+e)/5,
+       c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE a IS NULL
+   AND (e>c OR e<d)
+   AND c>d
+----
+
+query IIII rowsort
+SELECT abs(a),
+       b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT c,
+       a,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query I rowsort
+SELECT abs(a)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       b,
+       c,
+       a+b*2+c*3,
+       abs(b-c)
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR b>c
+    OR c>d
+----
+query II rowsort
+SELECT a,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+191
+1918
+220
+2226
+245
+2476
+
+query IIII rowsort
+SELECT a+b*2,
+       a+b*2+c*3,
+       c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+----
+query IIII rowsort
+SELECT abs(b-c),
+       a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+   AND (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3,
+       abs(b-c),
+       a+b*2,
+       d-e,
+       c-d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+1067
+108
+333
+1272
+128
+222
+
+query IIIII rowsort
+SELECT abs(a),
+       a+b*2,
+       d,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+   AND a>b
+   AND d>e
+----
+25 values hashing to a3fe1bd433b8d3ac30c4bf15c6e9333f
+
+query IIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       c-d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR c>d
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       c,
+       a+b*2+c*3,
+       b
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       a-b,
+       c,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR d NOT BETWEEN 110 AND 150
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIIIII rowsort
+SELECT c-d,
+       abs(a),
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       d,
+       a+b*2+c*3
+  FROM t1
+ WHERE b IS NOT NULL
+    OR a IS NULL
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query II rowsort
+SELECT a-b,
+       a+b*2
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND c>d
+----
+1
+391
+1
+544
+4294967295
+416
+4294967295
+428
+
+query IIIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5,
+       abs(b-c),
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query II rowsort
+SELECT a+b*2+c*3,
+       d
+  FROM t1
+ WHERE b IS NOT NULL
+   AND c>d
+----
+query I rowsort
+SELECT a-b
+  FROM t1
+ WHERE a IS NULL
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND c BETWEEN b-2 AND d+2
+   AND b>c
+----
+137
+142
+
+query IIIII rowsort
+SELECT c,
+       d,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE b>c
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       a-b,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>c OR e<d)
+   AND c>d
+----
+48 values hashing to ecf17f934e6b2944e9fad295072d6094
+
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+ WHERE a IS NULL
+----
+query II rowsort
+SELECT b-c,
+       abs(b-c)
+  FROM t1
+ WHERE b IS NOT NULL
+   AND b>c
+   AND (e>c OR e<d)
+----
+18 values hashing to 0c3b777ae812bad409d1755b5939afc3
+
+query IIIIIII rowsort
+SELECT e,
+       abs(a),
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       a+b*2+c*3+d*4,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query III rowsort
+SELECT d-e,
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE d>e
+    OR (e>a AND e<b)
+    OR (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c-d,
+       d,
+       abs(a),
+       a-b,
+       b
+  FROM t1
+ WHERE a IS NULL
+    OR c>d
+    OR (e>a AND e<b)
+----
+query I rowsort
+SELECT d-e
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND c>d
+   AND a IS NULL
+----
+
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4+e*5,
+       e,
+       c-d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND a>b
+   AND d>e
+----
+10 values hashing to 94687ff68c793a73b2748f957dd0bcf3
+
+query IIIIIII rowsort
+SELECT c-d,
+       c,
+       e,
+       abs(a),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE d>e
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       a,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query II rowsort
+SELECT b,
+       c
+  FROM t1
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       c-d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       a+b*2,
+       a
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIIII rowsort
+SELECT a-b,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       abs(a),
+       (a+b+c+d+e)/5
+  FROM t1
+----
+query IIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       c,
+       d-e,
+       abs(a),
+       abs(b-c)
+  FROM t1
+ WHERE b>c
+   AND (e>c OR e<d)
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query IIIII rowsort
+SELECT d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c,
+       c,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE a IS NULL
+    OR c>d
+----
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2,
+       a+b*2+c*3
+  FROM t1
+ WHERE c>d
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5
+  FROM t1
+----
+query IIII rowsort
+SELECT d-e,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+2
+1272
+222
+127
+4294967295
+1067
+333
+107
+
+query IIIIII rowsort
+SELECT c,
+       b,
+       (a+b+c+d+e)/5,
+       abs(a),
+       a+b*2,
+       c-d
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (a>b-2 AND a<b+2)
+   AND coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT a+b*2,
+       d,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE c>d
+   AND b IS NOT NULL
+----
+query IIIII rowsort
+SELECT c-d,
+       a,
+       b,
+       d,
+       b-c
+  FROM t1
+ WHERE c>d
+    OR a>b
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       abs(a),
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4,
+       b-c,
+       e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+   AND b IS NOT NULL
+----
+query I rowsort
+SELECT d-e
+  FROM t1
+ WHERE a IS NULL
+   AND d NOT BETWEEN 110 AND 150
+   AND b>c
+----
+
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       b,
+       abs(b-c),
+       (a+b+c+d+e)/5,
+       e
+  FROM t1
+ WHERE a IS NULL
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       abs(a),
+       c,
+       d,
+       a+b*2+c*3+d*4
+  FROM t1
+----
+query IIIII rowsort
+SELECT d-e,
+       abs(a),
+       e,
+       c-d,
+       a-b
+  FROM t1
+----
+query II rowsort
+SELECT abs(b-c),
+       d-e
+  FROM t1
+----
+query IIII rowsort
+SELECT b,
+       e,
+       b-c,
+       d-e
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+   AND (e>a AND e<b)
+   AND a>b
+----
+
+query III rowsort
+SELECT c-d,
+       a,
+       d
+  FROM t1
+ WHERE d>e
+----
+query IIIIIII rowsort
+SELECT abs(a),
+       abs(b-c),
+       a+b*2,
+       a+b*2+c*3,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b>c
+----
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c),
+       c
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b>c
+    OR c>d
+----
+query IIIIII rowsort
+SELECT b-c,
+       a+b*2+c*3,
+       c,
+       abs(b-c),
+       e,
+       d
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT a+b*2,
+       b-c,
+       d-e,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT abs(a),
+       (a+b+c+d+e)/5,
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+ WHERE b>c
+    OR (e>c OR e<d)
+----
+query IIIIII rowsort
+SELECT a+b*2+c*3,
+       (a+b+c+d+e)/5,
+       c-d,
+       b-c,
+       b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+18 values hashing to 092d0823123dbdbb4d5c30cb0ec8795c
+
+query IIIIIII rowsort
+SELECT a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c,
+       e,
+       abs(a),
+       a-b,
+       c
+  FROM t1
+ WHERE a IS NULL
+   AND b>c
+----
+
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       a-b,
+       d-e
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIII rowsort
+SELECT c,
+       d,
+       abs(a),
+       d-e
+  FROM t1
+ WHERE a IS NULL
+    OR a>b
+----
+query II rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE (e>a AND e<b)
+   AND a>b
+----
+
+query IIII rowsort
+SELECT d,
+       a,
+       a+b*2+c*3,
+       abs(a)
+  FROM t1
+ WHERE b>c
+   AND d>e
+   AND d NOT BETWEEN 110 AND 150
+----
+233
+234
+1391
+234
+248
+245
+1484
+245
+
+query IIII rowsort
+SELECT b-c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR b IS NOT NULL
+    OR (a>b-2 AND a<b+2)
+----
+query II rowsort
+SELECT b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+   AND d>e
+----
+2
+222
+4294967292
+333
+4294967293
+333
+
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c),
+       a,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+    OR d>e
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT e,
+       a+b*2+c*3+d*4,
+       c-d
+  FROM t1
+----
+query I rowsort
+SELECT abs(b-c)
+  FROM t1
+ WHERE a IS NULL
+----
+1
+2
+
+query IIIIII rowsort
+SELECT e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a),
+       (a+b+c+d+e)/5,
+       a+b*2,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR a IS NULL
+    OR b IS NOT NULL
+----
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       e,
+       c-d,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE b IS NOT NULL
+    OR c>d
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT abs(a),
+       c-d,
+       b,
+       c,
+       a+b*2,
+       e
+  FROM t1
+ WHERE a>b
+   AND a IS NULL
+----
+
+query IIIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2,
+       b-c,
+       a+b*2+c*3+d*4+e*5,
+       abs(a),
+       d-e
+  FROM t1
+----
+query IIIIII rowsort
+SELECT b-c,
+       a,
+       c-d,
+       c,
+       b,
+       a-b
+  FROM t1
+ WHERE a>b
+    OR c>d
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query I rowsort
+SELECT d
+  FROM t1
+ WHERE a IS NULL
+    OR (e>a AND e<b)
+    OR a>b
+----
+query III rowsort
+SELECT c-d,
+       a+b*2+c*3,
+       b
+  FROM t1
+ WHERE c>d
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT a,
+       d,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE a IS NULL
+    OR c BETWEEN b-2 AND d+2
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       c,
+       a+b*2+c*3
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+    OR (e>a AND e<b)
+----
+query IIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       d,
+       b
+  FROM t1
+ WHERE b IS NOT NULL
+   AND e+d BETWEEN a+b-10 AND c+130
+   AND coalesce(a,b,c,d,e)<>0
+----
+1067
+635
+108
+105
+1272
+760
+128
+129
+
+query IIIIII rowsort
+SELECT c,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b-c
+  FROM t1
+ WHERE d NOT BETWEEN 110 AND 150
+----
+query III rowsort
+SELECT d,
+       a+b*2+c*3,
+       b-c
+  FROM t1
+----
+query I rowsort
+SELECT d
+  FROM t1
+ WHERE b>c
+----
+query I rowsort
+SELECT d-e
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+   AND d NOT BETWEEN 110 AND 150
+   AND d>e
+----
+
+query IIIII rowsort
+SELECT e,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4+e*5,
+       abs(b-c),
+       abs(a)
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+10 values hashing to 70f74835f40cd9bc1a696bbf6af23006
+
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       a,
+       a+b*2
+  FROM t1
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(b-c),
+       c,
+       a+b*2+c*3
+  FROM t1
+ WHERE d>e
+    OR e+d BETWEEN a+b-10 AND c+130
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT b,
+       a,
+       abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c-d
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT a-b,
+       a,
+       b,
+       b-c
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       a+b*2+c*3,
+       a,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a-b,
+       b-c,
+       e
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (e>c OR e<d)
+----
+query IIIII rowsort
+SELECT a-b,
+       b-c,
+       abs(b-c),
+       a+b*2+c*3+d*4,
+       a+b*2
+  FROM t1
+ WHERE d>e
+   AND d NOT BETWEEN 110 AND 150
+----
+query I rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+30 values hashing to 62634e04a17da0e006feac1d867155ac
+
+query IIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b,
+       e,
+       a+b*2+c*3,
+       abs(b-c),
+       d-e
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4+e*5
+  FROM t1
+ WHERE c>d
+----
+query IIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4,
+       d-e,
+       b-c,
+       a+b*2+c*3
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+10 values hashing to ea16aedcfe6828c2b22ada2132bfa760
+
+query III rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       abs(a)
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5,
+       b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR a IS NULL
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3,
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       abs(a),
+       e,
+       a+b*2,
+       c
+  FROM t1
+----
+query IIII rowsort
+SELECT abs(a),
+       abs(b-c),
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+32 values hashing to 8b2ff4b813a2f510ddc64d519edce334
+
+query IIIIIII rowsort
+SELECT abs(a),
+       a+b*2+c*3+d*4,
+       a,
+       (a+b+c+d+e)/5,
+       a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       a-b
+  FROM t1
+ WHERE b IS NOT NULL
+    OR c BETWEEN b-2 AND d+2
+    OR e+d BETWEEN a+b-10 AND c+130
+----
+query III rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       b,
+       c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+1050
+105
+106
+1290
+129
+125
+
+query IIIII rowsort
+SELECT abs(a),
+       a,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       c,
+       c-d
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4,
+       c,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+----
+query I rowsort
+SELECT a+b*2+c*3
+  FROM t1
+ WHERE a IS NULL
+    OR a>b
+    OR (e>c OR e<d)
+----
+query I rowsort
+SELECT a
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c,
+       abs(a),
+       a,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIII rowsort
+SELECT b-c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d-e,
+       a+b*2+c*3+d*4+e*5,
+       c,
+       e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d NOT BETWEEN 110 AND 150
+    OR c>d
+----
+query III rowsort
+SELECT d,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a-b,
+       b,
+       a+b*2,
+       a,
+       abs(a),
+       d-e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query II rowsort
+SELECT (a+b+c+d+e)/5,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE b IS NOT NULL
+----
+query IIII rowsort
+SELECT c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       d-e,
+       a+b*2+c*3
+  FROM t1
+ WHERE d>e
+----
+query IIIII rowsort
+SELECT CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       abs(b-c),
+       a+b*2+c*3+d*4,
+       e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIII rowsort
+SELECT c,
+       a+b*2+c*3,
+       d,
+       abs(b-c),
+       e
+  FROM t1
+ WHERE c BETWEEN b-2 AND d+2
+    OR d>e
+    OR d NOT BETWEEN 110 AND 150
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       b,
+       a+b*2+c*3+d*4,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       d
+  FROM t1
+----
+query II rowsort
+SELECT a,
+       c-d
+  FROM t1
+ WHERE c>d
+----
+query IIIII rowsort
+SELECT b-c,
+       c,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(a),
+       a+b*2+c*3
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+15 values hashing to c8b2063413c4520353a17a88708abb99
+
+query I rowsort
+SELECT c
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR (a>b-2 AND a<b+2)
+----
+10 values hashing to 0dc2687c4c2481b5ba21e40d6d155aa1
+
+query IIII rowsort
+SELECT (a+b+c+d+e)/5,
+       d-e,
+       a-b,
+       abs(a)
+  FROM t1
+ WHERE (e>c OR e<d)
+   AND a>b
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIIIIII rowsort
+SELECT b-c,
+       e,
+       d,
+       (a+b+c+d+e)/5,
+       d-e,
+       a+b*2,
+       c-d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR d>e
+    OR a IS NULL
+----
+query II rowsort
+SELECT b,
+       a-b
+  FROM t1
+----
+query IIIIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4,
+       e,
+       b,
+       a-b,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+----
+query IIIIIII rowsort
+SELECT b,
+       d-e,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a,
+       a+b*2+c*3+d*4+e*5,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a-b
+  FROM t1
+ WHERE a IS NULL
+   AND a>b
+   AND e+d BETWEEN a+b-10 AND c+130
+----
+
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       c
+  FROM t1
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       b,
+       a,
+       d,
+       a-b
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+----
+10 values hashing to de7f94e22a359c146d6114d56e9f38ab
+
+query III rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b,
+       b-c
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       b-c,
+       a,
+       (a+b+c+d+e)/5,
+       c,
+       a+b*2
+  FROM t1
+ WHERE b IS NOT NULL
+    OR c>d
+    OR coalesce(a,b,c,d,e)<>0
+----
+query II rowsort
+SELECT a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       a+b*2
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIIII rowsort
+SELECT a+b*2+c*3+d*4+e*5,
+       a-b,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE a>b
+   AND a IS NULL
+   AND (e>a AND e<b)
+----
+
+query IIIIII rowsort
+SELECT abs(b-c),
+       a,
+       d-e,
+       a+b*2,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       e
+  FROM t1
+ WHERE b IS NOT NULL
+   AND (e>a AND e<b)
+----
+18 values hashing to 5897c51c615635757b2527592380d5b5
+
+query II rowsort
+SELECT c,
+       d
+  FROM t1
+----
+query I rowsort
+SELECT a+b*2+c*3+d*4
+  FROM t1
+----
+query I rowsort
+SELECT e
+  FROM t1
+ WHERE (e>a AND e<b)
+----
+192
+221
+246
+
+query IIIIIII rowsort
+SELECT a+b*2,
+       a-b,
+       d,
+       a+b*2+c*3+d*4+e*5,
+       c-d,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       b
+  FROM t1
+----
+query I rowsort
+SELECT a
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR (e>a AND e<b)
+----
+107
+127
+191
+220
+245
+
+query IIII rowsort
+SELECT a-b,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE (a>b-2 AND a<b+2)
+    OR b IS NOT NULL
+----
+query II rowsort
+SELECT CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       abs(b-c)
+  FROM t1
+----
+query IIIIII rowsort
+SELECT CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a-b,
+       c-d,
+       e,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       d-e
+  FROM t1
+ WHERE a IS NULL
+    OR c BETWEEN b-2 AND d+2
+    OR b IS NOT NULL
+----
+query IIIIIII rowsort
+SELECT d-e,
+       abs(a),
+       e,
+       abs(b-c),
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       a+b*2+c*3+d*4,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR (a>b-2 AND a<b+2)
+    OR coalesce(a,b,c,d,e)<>0
+----
+query IIIIII rowsort
+SELECT c-d,
+       a+b*2+c*3+d*4,
+       a,
+       a+b*2+c*3,
+       b,
+       a+b*2
+  FROM t1
+ WHERE (e>c OR e<d)
+----
+query I rowsort
+SELECT a
+  FROM t1
+----
+query III rowsort
+SELECT a+b*2+c*3+d*4,
+       abs(b-c),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END
+  FROM t1
+ WHERE (e>a AND e<b)
+    OR coalesce(a,b,c,d,e)<>0
+    OR (e>c OR e<d)
+----
+query IIIIIII rowsort
+SELECT abs(b-c),
+       a-b,
+       a,
+       abs(a),
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END
+  FROM t1
+ WHERE a IS NULL
+    OR (e>c OR e<d)
+    OR (a>b-2 AND a<b+2)
+----
+query IIIIIII rowsort
+SELECT d-e,
+       d,
+       CASE a+1 WHEN b THEN 111 WHEN c THEN 222
+        WHEN d THEN 333  WHEN e THEN 444 ELSE 555 END,
+       (a+b+c+d+e)/5,
+       a-b,
+       a+b*2+c*3,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE d>e
+   AND (a>b-2 AND a<b+2)
+----
+21 values hashing to 2284e077e3b926f1fb217b0e5349415b
+
+query IIIIII rowsort
+SELECT (a+b+c+d+e)/5,
+       abs(a),
+       abs(b-c),
+       a+b*2+c*3+d*4+e*5,
+       b-c,
+       c
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query III rowsort
+SELECT d-e,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END,
+       a+b*2+c*3+d*4
+  FROM t1
+ WHERE b>c
+    OR (e>a AND e<b)
+----
+query IIIII rowsort
+SELECT a+b*2,
+       b-c,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       c,
+       CASE WHEN c>(SELECT avg(c) FROM t1) THEN a*2 ELSE b*10 END
+  FROM t1
+ WHERE c>d
+    OR a>b
+    OR (e>a AND e<b)
+----
+query I rowsort
+SELECT (a+b+c+d+e)/5
+  FROM t1
+----
+query II rowsort
+SELECT abs(a),
+       d
+  FROM t1
+ WHERE e+d BETWEEN a+b-10 AND c+130
+    OR b>c
+    OR c BETWEEN b-2 AND d+2
+----
+query IIIIII rowsort
+SELECT abs(b-c),
+       b-c,
+       a+b*2+c*3,
+       d-e,
+       c-d,
+       (a+b+c+d+e)/5
+  FROM t1
+ WHERE d>e
+----
+query III rowsort
+SELECT b,
+       c-d,
+       a+b*2+c*3
+  FROM t1
+ WHERE a IS NULL
+   AND c>d
+   AND d NOT BETWEEN 110 AND 150
+----
+query IIII rowsort
+SELECT a+b*2+c*3,
+       d,
+       b,
+       a-b
+  FROM t1
+ WHERE coalesce(a,b,c,d,e)<>0
+----
+query IIII rowsort
+SELECT c-d,
+       a-b,
+       CASE WHEN a<b-3 THEN 111 WHEN a<=b THEN 222
+        WHEN a<b+3 THEN 333 ELSE 444 END,
+       (a+b+c+d+e)/5
+  FROM t1
+----
