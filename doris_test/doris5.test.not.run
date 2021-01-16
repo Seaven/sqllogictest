@@ -1,0 +1,1164 @@
+statement ok
+drop table IF EXISTS t1
+
+statement ok
+CREATE TABLE t1( a1 INTEGER, b1 INTEGER, x1 VARCHAR(40)) DUPLICATE KEY(`a1`) DISTRIBUTED BY HASH(a1) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t1 VALUES(1,1,'table t1 row 1')
+
+statement ok
+INSERT INTO t1 VALUES(2,4,'table t1 row 2')
+
+statement ok
+INSERT INTO t1 VALUES(3,2,'table t1 row 3')
+
+statement ok
+INSERT INTO t1 VALUES(4,3,'table t1 row 4')
+
+statement ok
+drop table IF EXISTS t2
+
+statement ok
+CREATE TABLE t2( a2 INTEGER, b2 INTEGER, x2 VARCHAR(40)) DUPLICATE KEY(`a2`) DISTRIBUTED BY HASH(a2) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t2 VALUES(1,4,'table t2 row 1')
+
+statement ok
+INSERT INTO t2 VALUES(2,2,'table t2 row 2')
+
+statement ok
+INSERT INTO t2 VALUES(3,3,'table t2 row 3')
+
+statement ok
+INSERT INTO t2 VALUES(4,1,'table t2 row 4')
+
+statement ok
+drop table IF EXISTS t3
+
+statement ok
+CREATE TABLE t3( a3 INTEGER, b3 INTEGER, x3 VARCHAR(40)) DUPLICATE KEY(`a3`) DISTRIBUTED BY HASH(a3) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t3 VALUES(1,1,'table t3 row 1')
+
+statement ok
+INSERT INTO t3 VALUES(2,4,'table t3 row 2')
+
+statement ok
+INSERT INTO t3 VALUES(3,3,'table t3 row 3')
+
+statement ok
+INSERT INTO t3 VALUES(4,2,'table t3 row 4')
+
+statement ok
+drop table IF EXISTS t4
+
+statement ok
+CREATE TABLE t4( a4 INTEGER, b4 INTEGER, x4 VARCHAR(40)) DUPLICATE KEY(`a4`) DISTRIBUTED BY HASH(a4) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a4`) DISTRIBUTED BY HASH(a4) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a4`) DISTRIBUTED BY HASH(a4) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t4 VALUES(1,3,'table t4 row 1')
+
+statement ok
+INSERT INTO t4 VALUES(2,1,'table t4 row 2')
+
+statement ok
+INSERT INTO t4 VALUES(3,4,'table t4 row 3')
+
+statement ok
+INSERT INTO t4 VALUES(4,2,'table t4 row 4')
+
+statement ok
+drop table IF EXISTS t5
+
+statement ok
+CREATE TABLE t5( a5 INTEGER, b5 INTEGER, x5 VARCHAR(40)) DUPLICATE KEY(`a5`) DISTRIBUTED BY HASH(a5) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a5`) DISTRIBUTED BY HASH(a5) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a5`) DISTRIBUTED BY HASH(a5) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t5 VALUES(1,1,'table t5 row 1')
+
+statement ok
+INSERT INTO t5 VALUES(2,3,'table t5 row 2')
+
+statement ok
+INSERT INTO t5 VALUES(3,4,'table t5 row 3')
+
+statement ok
+INSERT INTO t5 VALUES(4,2,'table t5 row 4')
+
+statement ok
+drop table IF EXISTS t6
+
+statement ok
+CREATE TABLE t6( a6 INTEGER, b6 INTEGER, x6 VARCHAR(40)) DUPLICATE KEY(`a6`) DISTRIBUTED BY HASH(a6) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a6`) DISTRIBUTED BY HASH(a6) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a6`) DISTRIBUTED BY HASH(a6) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t6 VALUES(1,3,'table t6 row 1')
+
+statement ok
+INSERT INTO t6 VALUES(2,2,'table t6 row 2')
+
+statement ok
+INSERT INTO t6 VALUES(3,4,'table t6 row 3')
+
+statement ok
+INSERT INTO t6 VALUES(4,1,'table t6 row 4')
+
+statement ok
+drop table IF EXISTS t7
+
+statement ok
+CREATE TABLE t7( a7 INTEGER, b7 INTEGER, x7 VARCHAR(40)) DUPLICATE KEY(`a7`) DISTRIBUTED BY HASH(a7) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a7`) DISTRIBUTED BY HASH(a7) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a7`) DISTRIBUTED BY HASH(a7) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t7 VALUES(1,2,'table t7 row 1')
+
+statement ok
+INSERT INTO t7 VALUES(2,4,'table t7 row 2')
+
+statement ok
+INSERT INTO t7 VALUES(3,1,'table t7 row 3')
+
+statement ok
+INSERT INTO t7 VALUES(4,3,'table t7 row 4')
+
+statement ok
+drop table IF EXISTS t8
+
+statement ok
+CREATE TABLE t8( a8 INTEGER, b8 INTEGER, x8 VARCHAR(40)) DUPLICATE KEY(`a8`) DISTRIBUTED BY HASH(a8) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a8`) DISTRIBUTED BY HASH(a8) BUCKETS 10 PROPERTIES ("replication_num" = "1") DUPLICATE KEY(`a8`) DISTRIBUTED BY HASH(a8) BUCKETS 10 PROPERTIES ("replication_num" = "1");
+
+statement ok
+INSERT INTO t8 VALUES(1,4,'table t8 row 1')
+
+statement ok
+INSERT INTO t8 VALUES(2,3,'table t8 row 2')
+
+statement ok
+INSERT INTO t8 VALUES(3,1,'table t8 row 3')
+
+statement ok
+INSERT INTO t8 VALUES(4,2,'table t8 row 4')
+
+query TTTT valuesort join-4-1
+SELECT x4,x8,x2,x6
+  FROM t2,t8,t4,t6
+ WHERE a4=b8
+   AND a2=1
+   AND a2=b4
+   AND a8=b6
+----
+table t2 row 1
+table t4 row 2
+table t6 row 3
+table t8 row 4
+
+query TTTT valuesort join-4-1
+SELECT x4,x8,x2,x6
+  FROM t4,t8,t2,t6
+ WHERE a8=b6
+   AND a2=1
+   AND b8=a4
+   AND a2=b4
+----
+table t2 row 1
+table t4 row 2
+table t6 row 3
+table t8 row 4
+
+query TTTT valuesort join-4-1
+SELECT x4,x8,x2,x6
+  FROM t8,t6,t4,t2
+ WHERE b4=a2
+   AND b6=a8
+   AND a4=b8
+   AND a2=1
+----
+table t2 row 1
+table t4 row 2
+table t6 row 3
+table t8 row 4
+
+query TTTT valuesort join-4-2
+SELECT x5,x6,x2,x8
+  FROM t6,t8,t5,t2
+ WHERE b2=a5
+   AND a8=b5
+   AND a6=2
+   AND a6=b8
+----
+table t2 row 3
+table t5 row 3
+table t6 row 2
+table t8 row 4
+
+query TTTT valuesort join-4-2
+SELECT x5,x6,x2,x8
+  FROM t8,t2,t5,t6
+ WHERE a8=b5
+   AND a5=b2
+   AND a6=2
+   AND b8=a6
+----
+table t2 row 3
+table t5 row 3
+table t6 row 2
+table t8 row 4
+
+query TTTT valuesort join-4-2
+SELECT x5,x6,x2,x8
+  FROM t2,t5,t8,t6
+ WHERE b2=a5
+   AND b8=a6
+   AND a6=2
+   AND b5=a8
+----
+table t2 row 3
+table t5 row 3
+table t6 row 2
+table t8 row 4
+
+query TTTT valuesort join-4-3
+SELECT x6,x3,x2,x4
+  FROM t6,t4,t2,t3
+ WHERE a3=b6
+   AND a4=2
+   AND a6=b2
+   AND a4=b3
+----
+table t2 row 3
+table t3 row 4
+table t4 row 2
+table t6 row 3
+
+query TTTT valuesort join-4-3
+SELECT x6,x3,x2,x4
+  FROM t6,t2,t4,t3
+ WHERE a6=b2
+   AND a4=2
+   AND a4=b3
+   AND a3=b6
+----
+table t2 row 3
+table t3 row 4
+table t4 row 2
+table t6 row 3
+
+query TTTT valuesort join-4-3
+SELECT x6,x3,x2,x4
+  FROM t3,t4,t6,t2
+ WHERE a4=2
+   AND a6=b2
+   AND a3=b6
+   AND b3=a4
+----
+table t2 row 3
+table t3 row 4
+table t4 row 2
+table t6 row 3
+
+query TTTT valuesort join-4-4
+SELECT x1,x8,x3,x5
+  FROM t5,t1,t3,t8
+ WHERE b8=a3
+   AND b5=a8
+   AND a1=4
+   AND b3=a1
+----
+table t1 row 4
+table t3 row 2
+table t5 row 3
+table t8 row 4
+
+query TTTT valuesort join-4-4
+SELECT x1,x8,x3,x5
+  FROM t3,t8,t5,t1
+ WHERE a8=b5
+   AND b3=a1
+   AND a3=b8
+   AND a1=4
+----
+table t1 row 4
+table t3 row 2
+table t5 row 3
+table t8 row 4
+
+query TTTT valuesort join-4-4
+SELECT x1,x8,x3,x5
+  FROM t8,t1,t5,t3
+ WHERE a1=4
+   AND a1=b3
+   AND b5=a8
+   AND b8=a3
+----
+table t1 row 4
+table t3 row 2
+table t5 row 3
+table t8 row 4
+
+query TTTTT valuesort join-5-1
+SELECT x1,x8,x6,x7,x2
+  FROM t8,t7,t1,t6,t2
+ WHERE a1=4
+   AND b2=a7
+   AND b8=a6
+   AND b7=a8
+   AND b6=a1
+----
+table t1 row 4
+table t2 row 4
+table t6 row 3
+table t7 row 1
+table t8 row 2
+
+query TTTTT valuesort join-5-1
+SELECT x1,x8,x6,x7,x2
+  FROM t8,t7,t2,t6,t1
+ WHERE a6=b8
+   AND b2=a7
+   AND b6=a1
+   AND a8=b7
+   AND a1=4
+----
+table t1 row 4
+table t2 row 4
+table t6 row 3
+table t7 row 1
+table t8 row 2
+
+query TTTTT valuesort join-5-1
+SELECT x1,x8,x6,x7,x2
+  FROM t1,t6,t2,t7,t8
+ WHERE a1=4
+   AND a1=b6
+   AND b7=a8
+   AND a7=b2
+   AND a6=b8
+----
+table t1 row 4
+table t2 row 4
+table t6 row 3
+table t7 row 1
+table t8 row 2
+
+query TTTTT valuesort join-5-2
+SELECT x4,x8,x2,x3,x7
+  FROM t2,t8,t7,t3,t4
+ WHERE a4=3
+   AND a4=b7
+   AND b3=a8
+   AND a7=b2
+   AND a2=b8
+----
+table t2 row 1
+table t3 row 3
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-2
+SELECT x4,x8,x2,x3,x7
+  FROM t3,t7,t8,t2,t4
+ WHERE b8=a2
+   AND a7=b2
+   AND a4=b7
+   AND a8=b3
+   AND a4=3
+----
+table t2 row 1
+table t3 row 3
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-2
+SELECT x4,x8,x2,x3,x7
+  FROM t8,t2,t3,t4,t7
+ WHERE b7=a4
+   AND a4=3
+   AND a8=b3
+   AND b8=a2
+   AND b2=a7
+----
+table t2 row 1
+table t3 row 3
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-3
+SELECT x3,x8,x7,x4,x2
+  FROM t4,t3,t2,t8,t7
+ WHERE b2=a3
+   AND b7=a8
+   AND a3=4
+   AND b4=a7
+   AND b8=a2
+----
+table t2 row 1
+table t3 row 4
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-3
+SELECT x3,x8,x7,x4,x2
+  FROM t4,t7,t3,t8,t2
+ WHERE b8=a2
+   AND b4=a7
+   AND b7=a8
+   AND a3=4
+   AND b2=a3
+----
+table t2 row 1
+table t3 row 4
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-3
+SELECT x3,x8,x7,x4,x2
+  FROM t7,t3,t2,t4,t8
+ WHERE b7=a8
+   AND b8=a2
+   AND a3=4
+   AND b2=a3
+   AND a7=b4
+----
+table t2 row 1
+table t3 row 4
+table t4 row 3
+table t7 row 4
+table t8 row 3
+
+query TTTTT valuesort join-5-4
+SELECT x5,x6,x3,x2,x1
+  FROM t1,t2,t5,t3,t6
+ WHERE b3=a2
+   AND b6=a5
+   AND a2=3
+   AND a3=b1
+   AND b5=a1
+----
+table t1 row 4
+table t2 row 3
+table t3 row 3
+table t5 row 3
+table t6 row 1
+
+query TTTTT valuesort join-5-4
+SELECT x5,x6,x3,x2,x1
+  FROM t6,t2,t3,t1,t5
+ WHERE a2=3
+   AND a5=b6
+   AND a3=b1
+   AND b3=a2
+   AND b5=a1
+----
+table t1 row 4
+table t2 row 3
+table t3 row 3
+table t5 row 3
+table t6 row 1
+
+query TTTTT valuesort join-5-4
+SELECT x5,x6,x3,x2,x1
+  FROM t5,t3,t1,t2,t6
+ WHERE a1=b5
+   AND a2=b3
+   AND b1=a3
+   AND a2=3
+   AND b6=a5
+----
+table t1 row 4
+table t2 row 3
+table t3 row 3
+table t5 row 3
+table t6 row 1
+
+query TTTTTT valuesort join-6-1
+SELECT x2,x4,x8,x7,x3,x5
+  FROM t5,t4,t3,t2,t7,t8
+ WHERE a2=b5
+   AND a3=2
+   AND a3=b7
+   AND b4=a5
+   AND b2=a7
+   AND b8=a4
+----
+table t2 row 4
+table t3 row 2
+table t4 row 1
+table t5 row 3
+table t7 row 1
+table t8 row 3
+
+query TTTTTT valuesort join-6-1
+SELECT x2,x4,x8,x7,x3,x5
+  FROM t5,t8,t2,t7,t3,t4
+ WHERE b7=a3
+   AND a3=2
+   AND b4=a5
+   AND a4=b8
+   AND a7=b2
+   AND b5=a2
+----
+table t2 row 4
+table t3 row 2
+table t4 row 1
+table t5 row 3
+table t7 row 1
+table t8 row 3
+
+query TTTTTT valuesort join-6-1
+SELECT x2,x4,x8,x7,x3,x5
+  FROM t8,t7,t5,t4,t2,t3
+ WHERE a7=b2
+   AND b4=a5
+   AND b7=a3
+   AND a4=b8
+   AND a2=b5
+   AND a3=2
+----
+table t2 row 4
+table t3 row 2
+table t4 row 1
+table t5 row 3
+table t7 row 1
+table t8 row 3
+
+query TTTTTT valuesort join-6-2
+SELECT x7,x8,x4,x1,x5,x3
+  FROM t3,t7,t4,t1,t5,t8
+ WHERE b8=a3
+   AND b3=a4
+   AND a5=b4
+   AND a8=b1
+   AND a1=b7
+   AND a5=2
+----
+table t1 row 2
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTT valuesort join-6-2
+SELECT x7,x8,x4,x1,x5,x3
+  FROM t8,t4,t7,t5,t1,t3
+ WHERE a3=b8
+   AND b1=a8
+   AND a5=b4
+   AND b7=a1
+   AND a5=2
+   AND b3=a4
+----
+table t1 row 2
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTT valuesort join-6-2
+SELECT x7,x8,x4,x1,x5,x3
+  FROM t1,t7,t3,t8,t4,t5
+ WHERE b1=a8
+   AND b4=a5
+   AND a4=b3
+   AND b7=a1
+   AND a3=b8
+   AND a5=2
+----
+table t1 row 2
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTT valuesort join-6-3
+SELECT x8,x1,x6,x2,x3,x4
+  FROM t1,t6,t8,t4,t2,t3
+ WHERE b2=a1
+   AND a8=b1
+   AND a4=4
+   AND a4=b3
+   AND b8=a6
+   AND a3=b6
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 4
+table t6 row 2
+table t8 row 4
+
+query TTTTTT valuesort join-6-3
+SELECT x8,x1,x6,x2,x3,x4
+  FROM t3,t8,t2,t6,t4,t1
+ WHERE b6=a3
+   AND b3=a4
+   AND a1=b2
+   AND a8=b1
+   AND a4=4
+   AND b8=a6
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 4
+table t6 row 2
+table t8 row 4
+
+query TTTTTT valuesort join-6-3
+SELECT x8,x1,x6,x2,x3,x4
+  FROM t8,t6,t3,t2,t1,t4
+ WHERE b2=a1
+   AND b8=a6
+   AND a8=b1
+   AND b6=a3
+   AND a4=b3
+   AND a4=4
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 4
+table t6 row 2
+table t8 row 4
+
+query TTTTTT valuesort join-6-4
+SELECT x3,x5,x8,x7,x2,x1
+  FROM t7,t5,t8,t3,t1,t2
+ WHERE b8=a1
+   AND a5=b1
+   AND a8=b2
+   AND b7=a3
+   AND a5=4
+   AND b3=a2
+----
+table t1 row 2
+table t2 row 1
+table t3 row 1
+table t5 row 4
+table t7 row 3
+table t8 row 4
+
+query TTTTTT valuesort join-6-4
+SELECT x3,x5,x8,x7,x2,x1
+  FROM t7,t2,t8,t5,t1,t3
+ WHERE b2=a8
+   AND b7=a3
+   AND a2=b3
+   AND a5=b1
+   AND a5=4
+   AND a1=b8
+----
+table t1 row 2
+table t2 row 1
+table t3 row 1
+table t5 row 4
+table t7 row 3
+table t8 row 4
+
+query TTTTTT valuesort join-6-4
+SELECT x3,x5,x8,x7,x2,x1
+  FROM t8,t1,t5,t7,t3,t2
+ WHERE a8=b2
+   AND a2=b3
+   AND b1=a5
+   AND a3=b7
+   AND a5=4
+   AND b8=a1
+----
+table t1 row 2
+table t2 row 1
+table t3 row 1
+table t5 row 4
+table t7 row 3
+table t8 row 4
+
+query TTTTTTT valuesort join-7-1
+SELECT x8,x4,x2,x7,x5,x3,x6
+  FROM t8,t3,t7,t5,t4,t2,t6
+ WHERE b2=a5
+   AND a4=3
+   AND b3=a4
+   AND b5=a3
+   AND b6=a2
+   AND b8=a6
+   AND b7=a8
+----
+table t2 row 2
+table t3 row 3
+table t4 row 3
+table t5 row 2
+table t6 row 2
+table t7 row 2
+table t8 row 4
+
+query TTTTTTT valuesort join-7-1
+SELECT x8,x4,x2,x7,x5,x3,x6
+  FROM t2,t3,t6,t8,t4,t5,t7
+ WHERE a2=b6
+   AND a4=3
+   AND a5=b2
+   AND b3=a4
+   AND b5=a3
+   AND b8=a6
+   AND a8=b7
+----
+table t2 row 2
+table t3 row 3
+table t4 row 3
+table t5 row 2
+table t6 row 2
+table t7 row 2
+table t8 row 4
+
+query TTTTTTT valuesort join-7-1
+SELECT x8,x4,x2,x7,x5,x3,x6
+  FROM t4,t7,t3,t6,t2,t5,t8
+ WHERE a4=3
+   AND b2=a5
+   AND b3=a4
+   AND b6=a2
+   AND a3=b5
+   AND a6=b8
+   AND b7=a8
+----
+table t2 row 2
+table t3 row 3
+table t4 row 3
+table t5 row 2
+table t6 row 2
+table t7 row 2
+table t8 row 4
+
+query TTTTTTT valuesort join-7-2
+SELECT x3,x7,x6,x1,x2,x5,x4
+  FROM t2,t6,t7,t1,t5,t4,t3
+ WHERE a3=b2
+   AND a5=b4
+   AND a7=1
+   AND b3=a1
+   AND a6=b5
+   AND b1=a7
+   AND b6=a2
+----
+table t1 row 1
+table t2 row 4
+table t3 row 1
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 1
+
+query TTTTTTT valuesort join-7-2
+SELECT x3,x7,x6,x1,x2,x5,x4
+  FROM t1,t7,t2,t5,t3,t6,t4
+ WHERE b2=a3
+   AND a7=1
+   AND b5=a6
+   AND b3=a1
+   AND a2=b6
+   AND b4=a5
+   AND b1=a7
+----
+table t1 row 1
+table t2 row 4
+table t3 row 1
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 1
+
+query TTTTTTT valuesort join-7-2
+SELECT x3,x7,x6,x1,x2,x5,x4
+  FROM t5,t6,t4,t2,t7,t3,t1
+ WHERE a7=1
+   AND b2=a3
+   AND a1=b3
+   AND b1=a7
+   AND b6=a2
+   AND b5=a6
+   AND b4=a5
+----
+table t1 row 1
+table t2 row 4
+table t3 row 1
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 1
+
+query TTTTTTT valuesort join-7-3
+SELECT x3,x1,x4,x5,x2,x6,x7
+  FROM t1,t5,t6,t7,t2,t3,t4
+ WHERE b3=a2
+   AND b4=a3
+   AND b5=a7
+   AND a5=b1
+   AND b7=a4
+   AND b2=a6
+   AND a6=2
+----
+table t1 row 4
+table t2 row 2
+table t3 row 4
+table t4 row 3
+table t5 row 3
+table t6 row 2
+table t7 row 4
+
+query TTTTTTT valuesort join-7-3
+SELECT x3,x1,x4,x5,x2,x6,x7
+  FROM t1,t2,t3,t7,t5,t6,t4
+ WHERE b4=a3
+   AND a5=b1
+   AND a6=b2
+   AND a4=b7
+   AND a7=b5
+   AND a6=2
+   AND b3=a2
+----
+table t1 row 4
+table t2 row 2
+table t3 row 4
+table t4 row 3
+table t5 row 3
+table t6 row 2
+table t7 row 4
+
+query TTTTTTT valuesort join-7-3
+SELECT x3,x1,x4,x5,x2,x6,x7
+  FROM t4,t2,t5,t1,t6,t3,t7
+ WHERE a6=2
+   AND a3=b4
+   AND a4=b7
+   AND a6=b2
+   AND a7=b5
+   AND a2=b3
+   AND a5=b1
+----
+table t1 row 4
+table t2 row 2
+table t3 row 4
+table t4 row 3
+table t5 row 3
+table t6 row 2
+table t7 row 4
+
+query TTTTTTT valuesort join-7-4
+SELECT x6,x3,x1,x7,x8,x4,x2
+  FROM t4,t6,t7,t8,t1,t3,t2
+ WHERE b8=a6
+   AND a2=b7
+   AND b4=a1
+   AND a1=1
+   AND a8=b3
+   AND a3=b2
+   AND b6=a4
+----
+table t1 row 1
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTT valuesort join-7-4
+SELECT x6,x3,x1,x7,x8,x4,x2
+  FROM t4,t6,t1,t3,t2,t7,t8
+ WHERE a3=b2
+   AND a4=b6
+   AND b7=a2
+   AND a1=1
+   AND a8=b3
+   AND a1=b4
+   AND a6=b8
+----
+table t1 row 1
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTT valuesort join-7-4
+SELECT x6,x3,x1,x7,x8,x4,x2
+  FROM t2,t4,t6,t7,t8,t1,t3
+ WHERE b8=a6
+   AND a4=b6
+   AND a1=b4
+   AND a3=b2
+   AND b3=a8
+   AND a1=1
+   AND a2=b7
+----
+table t1 row 1
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-1
+SELECT x2,x8,x1,x3,x5,x4,x7,x6
+  FROM t3,t6,t5,t2,t1,t4,t8,t7
+ WHERE a7=4
+   AND b2=a1
+   AND a2=b8
+   AND b5=a6
+   AND a4=b6
+   AND a8=b4
+   AND a7=b3
+   AND b1=a3
+----
+table t1 row 3
+table t2 row 3
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 4
+table t8 row 2
+
+query TTTTTTTT valuesort join-8-1
+SELECT x2,x8,x1,x3,x5,x4,x7,x6
+  FROM t4,t6,t7,t3,t1,t2,t5,t8
+ WHERE b2=a1
+   AND a2=b8
+   AND a7=b3
+   AND a8=b4
+   AND a6=b5
+   AND b1=a3
+   AND a7=4
+   AND b6=a4
+----
+table t1 row 3
+table t2 row 3
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 4
+table t8 row 2
+
+query TTTTTTTT valuesort join-8-1
+SELECT x2,x8,x1,x3,x5,x4,x7,x6
+  FROM t3,t6,t7,t2,t1,t8,t4,t5
+ WHERE b3=a7
+   AND a6=b5
+   AND b8=a2
+   AND b2=a1
+   AND a4=b6
+   AND a3=b1
+   AND a7=4
+   AND b4=a8
+----
+table t1 row 3
+table t2 row 3
+table t3 row 2
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 4
+table t8 row 2
+
+query TTTTTTTT valuesort join-8-2
+SELECT x5,x6,x8,x1,x7,x3,x4,x2
+  FROM t8,t7,t5,t1,t3,t4,t6,t2
+ WHERE b5=a1
+   AND a5=b8
+   AND a8=b7
+   AND a2=2
+   AND a4=b6
+   AND b3=a6
+   AND a2=b1
+   AND a7=b4
+----
+table t1 row 3
+table t2 row 2
+table t3 row 3
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 2
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-2
+SELECT x5,x6,x8,x1,x7,x3,x4,x2
+  FROM t4,t5,t3,t8,t7,t6,t1,t2
+ WHERE a2=2
+   AND b5=a1
+   AND a4=b6
+   AND b3=a6
+   AND a5=b8
+   AND b1=a2
+   AND b4=a7
+   AND b7=a8
+----
+table t1 row 3
+table t2 row 2
+table t3 row 3
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 2
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-2
+SELECT x5,x6,x8,x1,x7,x3,x4,x2
+  FROM t8,t4,t5,t3,t7,t1,t6,t2
+ WHERE a7=b4
+   AND b3=a6
+   AND b1=a2
+   AND a8=b7
+   AND a2=2
+   AND a1=b5
+   AND a5=b8
+   AND b6=a4
+----
+table t1 row 3
+table t2 row 2
+table t3 row 3
+table t4 row 4
+table t5 row 2
+table t6 row 3
+table t7 row 2
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-3
+SELECT x3,x1,x5,x7,x8,x2,x6,x4
+  FROM t5,t6,t8,t7,t1,t4,t3,t2
+ WHERE a2=b7
+   AND a8=b3
+   AND b4=a7
+   AND a6=b8
+   AND a4=b6
+   AND a5=4
+   AND a1=b2
+   AND b1=a5
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t5 row 4
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-3
+SELECT x3,x1,x5,x7,x8,x2,x6,x4
+  FROM t4,t1,t7,t2,t5,t3,t8,t6
+ WHERE b2=a1
+   AND b8=a6
+   AND b4=a7
+   AND b1=a5
+   AND b6=a4
+   AND a2=b7
+   AND a8=b3
+   AND a5=4
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t5 row 4
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-3
+SELECT x3,x1,x5,x7,x8,x2,x6,x4
+  FROM t6,t7,t2,t4,t5,t8,t3,t1
+ WHERE a4=b6
+   AND b7=a2
+   AND b1=a5
+   AND b3=a8
+   AND a5=4
+   AND a1=b2
+   AND b8=a6
+   AND a7=b4
+----
+table t1 row 2
+table t2 row 2
+table t3 row 2
+table t4 row 2
+table t5 row 4
+table t6 row 2
+table t7 row 1
+table t8 row 4
+
+query TTTTTTTT valuesort join-8-4
+SELECT x6,x1,x2,x4,x3,x5,x7,x8
+  FROM t1,t8,t6,t3,t2,t5,t4,t7
+ WHERE a4=b5
+   AND a6=b8
+   AND a5=b7
+   AND b6=a2
+   AND b3=a1
+   AND a3=b2
+   AND a7=b1
+   AND a4=2
+----
+table t1 row 3
+table t2 row 3
+table t3 row 3
+table t4 row 2
+table t5 row 4
+table t6 row 1
+table t7 row 2
+table t8 row 3
+
+query TTTTTTTT valuesort join-8-4
+SELECT x6,x1,x2,x4,x3,x5,x7,x8
+  FROM t6,t3,t7,t2,t5,t8,t1,t4
+ WHERE a4=2
+   AND b2=a3
+   AND a1=b3
+   AND a6=b8
+   AND b6=a2
+   AND a5=b7
+   AND a7=b1
+   AND b5=a4
+----
+table t1 row 3
+table t2 row 3
+table t3 row 3
+table t4 row 2
+table t5 row 4
+table t6 row 1
+table t7 row 2
+table t8 row 3
+
+query TTTTTTTT valuesort join-8-4
+SELECT x6,x1,x2,x4,x3,x5,x7,x8
+  FROM t5,t7,t1,t2,t8,t3,t4,t6
+ WHERE b5=a4
+   AND a3=b2
+   AND a4=2
+   AND b6=a2
+   AND a1=b3
+   AND a6=b8
+   AND b1=a7
+   AND b7=a5
+----
+table t1 row 3
+table t2 row 3
+table t3 row 3
+table t4 row 2
+table t5 row 4
+table t6 row 1
+table t7 row 2
+table t8 row 3
+
